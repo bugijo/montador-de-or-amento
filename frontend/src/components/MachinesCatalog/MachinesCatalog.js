@@ -18,7 +18,7 @@ import styled from 'styled-components';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 
-import { produtoService } from '../../services/produtoService';
+import { produtoService } from '../../services/ProdutoService';
 import { Button } from '../../styles/GlobalStyles';
 import { theme } from '../../styles/GlobalStyles';
 
