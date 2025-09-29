@@ -60,6 +60,7 @@ describe('Testes de Integração - Cálculos e Fórmulas', () => {
       nome: 'Máquina Teste',
       descricao: 'Descrição da máquina teste',
       categoria: 'categoria_teste',
+      tipo: 'Máquina',
       preco_base: 10000.00,
       ativo: true,
       especificacoes: {
@@ -71,11 +72,11 @@ describe('Testes de Integração - Cálculos e Fórmulas', () => {
 
     // Criar fórmula de teste
     const formula = await sequelize.models.Formula.create({
+      produto_id: produtoId,
+      maquina_id: produtoId,
       nome: 'Fórmula Básica',
       descricao: 'Fórmula para cálculo básico',
-      categoria: 'basica',
-      formula: 'preco_base * quantidade * (1 + margem / 100)',
-      variaveis: ['preco_base', 'quantidade', 'margem'],
+      formula: 'm2 * quantidade',
       ativo: true
     });
     formulaId = formula.id;

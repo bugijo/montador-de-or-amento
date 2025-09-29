@@ -1,5 +1,4 @@
 import styled, { createGlobalStyle, keyframes } from 'styled-components';
-import { FINITI_COLORS } from '../constants/colors';
 
 // Animações
 const fadeIn = keyframes`

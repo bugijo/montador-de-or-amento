@@ -8,19 +8,18 @@ import {
   FiList, 
   FiFilter,
   FiTrendingUp,
-  FiPackage,
-  FiUsers,
-  FiDollarSign,
   FiStar,
-  FiArrowRight
+  FiArrowRight,
+  FiInfo,
+  FiSettings,
+  FiZap
 } from 'react-icons/fi';
 import styled from 'styled-components';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 
 import { produtoService } from '../../services/ProdutoService';
-import { Button } from '../styles/globalStyles';
-import Theme from '../../styles/globalStyles';
+import { Button, Container, Flex, Text, Heading, Input, Grid, theme } from '../../styles/GlobalStyles';
 
 const CatalogContainer = styled(Container)`
   padding-top: ${theme.spacing.xl};
@@ -510,7 +509,10 @@ const MachinesCatalog = () => {
     }
   );
 
-  const machines = machinesData?.data?.maquinas || [];
+  // Memoizar a lista de máquinas
+  const machines = useMemo(() => {
+    return machinesData?.data?.maquinas || [];
+  }, [machinesData]);
 
   // Filtrar máquinas baseado na busca (memoizado)
   const filteredMachines = useMemo(() => {

@@ -59,6 +59,7 @@ describe('Testes de Integração - Produtos', () => {
       nome: 'Máquina Teste',
       descricao: 'Descrição da máquina teste',
       categoria: 'categoria_teste',
+      tipo: 'Máquina',
       preco_base: 10000.00,
       ativo: true,
       especificacoes: {
@@ -250,6 +251,7 @@ describe('Testes de Integração - Produtos', () => {
         nome: 'Produto Para Deletar',
         descricao: 'Será deletado',
         categoria: 'teste',
+        tipo: 'Máquina',
         preco_base: 5000.00,
         ativo: true
       });

@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiMail, FiLock, FiEye, FiEyeOff, FiUser, FiShield } from 'react-icons/fi';
+import { FiMail, FiLock, FiEye, FiEyeOff, FiShield } from 'react-icons/fi';
 import styled from 'styled-components';
 
 import { useAuth } from '../../contexts/AuthContext';
-import { Button, Input, Label, ErrorMessage, LoadingSpinner, Card, Flex, Text, Heading } from '../../styles/GlobalStyles';
+import { Button, Input, ErrorMessage, LoadingSpinner } from '../../styles/GlobalStyles';
 import { theme } from '../../styles/GlobalStyles';
 
 const LoginContainer = styled.div`

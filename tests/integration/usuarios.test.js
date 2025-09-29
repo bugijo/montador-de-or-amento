@@ -1,6 +1,6 @@
 const request = require('supertest');
 const app = require('../../src/app');
-const { User } = require('../../src/models');
+const { User, sequelize } = require('../../src/models');
 const jwt = require('jsonwebtoken');
 
 describe('Testes de Integração - Usuários', () => {
@@ -11,6 +11,9 @@ describe('Testes de Integração - Usuários', () => {
   let testUserId;
 
   beforeAll(async () => {
+    // Sincronizar banco de dados
+    await sequelize.sync({ force: true });
+    
     // Criar usuário admin para testes
     adminUser = await User.create({
       nome: 'Admin Teste',

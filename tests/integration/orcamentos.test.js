@@ -61,6 +61,7 @@ describe('Testes de Integração - Orçamentos', () => {
       nome: 'Máquina Teste',
       descricao: 'Descrição da máquina teste',
       categoria: 'categoria_teste',
+      tipo: 'Máquina',
       preco_base: 10000.00,
       ativo: true,
       especificacoes: {
@@ -72,11 +73,11 @@ describe('Testes de Integração - Orçamentos', () => {
 
     // Criar fórmula de teste
     const formula = await sequelize.models.Formula.create({
+      produto_id: produtoId,
+      maquina_id: produtoId,
       nome: 'Fórmula Teste',
       descricao: 'Fórmula para testes',
-      categoria: 'categoria_teste',
-      formula: 'preco_base * 1.2',
-      variaveis: ['preco_base'],
+      formula: 'm2 * 1.2',
       ativo: true
     });
     formulaId = formula.id;
