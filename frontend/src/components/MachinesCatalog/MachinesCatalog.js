@@ -19,8 +19,8 @@ import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 
 import { produtoService } from '../../services/ProdutoService';
-import { Button } from '../../styles/GlobalStyles';
-import { theme } from '../../styles/GlobalStyles';
+import { Button } from '../styles/globalStyles';
+import Theme from '../../styles/globalStyles';
 
 const CatalogContainer = styled(Container)`
   padding-top: ${theme.spacing.xl};
