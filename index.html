@@ -11,7 +11,7 @@
         <!-- Header Corporativo -->
         <div class="header">
             <div class="header-left">
-                <img src="logo-finiti.svg" alt="Logo FINITI" class="logo">
+                <img src="logo.png" alt="FINITI Logo" class="logo">
                 <h1>Gerador de Orçamentos</h1>
             </div>
         </div>
@@ -24,10 +24,6 @@
                     <div>
                         <label for="cliente">Nome do Cliente</label>
                         <input type="text" id="cliente" placeholder="Digite o nome do cliente">
-                    </div>
-                    <div>
-                        <label for="vendedor">Nome do Vendedor</label>
-                        <input type="text" id="vendedor" placeholder="Digite o nome do vendedor">
                     </div>
                     <div>
                         <label for="data">Data</label>
@@ -51,6 +47,53 @@
                         <input type="number" id="metros-quadrados" placeholder="Ex: 100" min="1" step="0.01">
                     </div>
                 </div>
+                
+                <!-- Qualidade do Piso -->
+                <fieldset class="qualidade-piso-section">
+                    <legend>Qualidade do Piso (1=Péssimo, 10=Ótimo)</legend>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" id="qualidade-1" name="qualidade-piso" value="1">
+                            <label for="qualidade-1">1</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="qualidade-2" name="qualidade-piso" value="2">
+                            <label for="qualidade-2">2</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="qualidade-3" name="qualidade-piso" value="3">
+                            <label for="qualidade-3">3</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="qualidade-4" name="qualidade-piso" value="4">
+                            <label for="qualidade-4">4</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="qualidade-5" name="qualidade-piso" value="5">
+                            <label for="qualidade-5">5</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="qualidade-6" name="qualidade-piso" value="6">
+                            <label for="qualidade-6">6</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="qualidade-7" name="qualidade-piso" value="7">
+                            <label for="qualidade-7">7</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="qualidade-8" name="qualidade-piso" value="8">
+                            <label for="qualidade-8">8</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="qualidade-9" name="qualidade-piso" value="9">
+                            <label for="qualidade-9">9</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="qualidade-10" name="qualidade-piso" value="10" checked>
+                            <label for="qualidade-10">10</label>
+                        </div>
+                    </div>
+                </fieldset>
                 <div class="acoes-section">
                     <button type="button" id="btn-calcular-insumos" class="btn btn-primary">Calcular Insumos</button>
                 </div>

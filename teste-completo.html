@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Completo - Programa Vendas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin: 15px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .radio-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .radio-item input[type="radio"] {
+            width: auto;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .resultado {
+            background-color: #f8f9fa;
+            padding: 15px;
+            margin: 20px 0;
+            border-left: 4px solid #007bff;
+            border-radius: 4px;
+        }
+        .tabela-insumos {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        .tabela-insumos th,
+        .tabela-insumos td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .tabela-insumos th {
+            background-color: #f2f2f2;
+        }
+        .inserto {
+            background-color: #fff3cd;
+        }
+        .lixa {
+            background-color: #d1ecf1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Teste Completo - Simulação da Aplicação Principal</h1>
+        
+        <form id="formulario-teste">
+            <div class="form-group">
+                <label for="metros-quadrados">Metros Quadrados:</label>
+                <input type="number" id="metros-quadrados" value="100" min="1" required>
+            </div>
+
+            <div class="form-group">
+                <label for="maquina">Máquina:</label>
+                <select id="maquina" required>
+                    <option value="">Selecione uma máquina</option>
+                    <option value="0">KLINDEX EXPANDER 800 (40m² base)</option>
+                    <option value="1">KLINDEX EXPANDER 1000 (50m² base)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Qualidade do Piso:</label>
+                <div class="radio-group">
+                    <div class="radio-item">
+                        <input type="radio" id="q1" name="qualidade-piso" value="1">
+                        <label for="q1">1 (Péssima)</label>
+                    </div>
+                    <div class="radio-item">
+                        <input type="radio" id="q3" name="qualidade-piso" value="3">
+                        <label for="q3">3 (Ruim)</label>
+                    </div>
+                    <div class="radio-item">
+                        <input type="radio" id="q5" name="qualidade-piso" value="5">
+                        <label for="q5">5 (Regular)</label>
+                    </div>
+                    <div class="radio-item">
+                        <input type="radio" id="q7" name="qualidade-piso" value="7">
+                        <label for="q7">7 (Média)</label>
+                    </div>
+                    <div class="radio-item">
+                        <input type="radio" id="q9" name="qualidade-piso" value="9">
+                        <label for="q9">9 (Boa)</label>
+                    </div>
+                    <div class="radio-item">
+                        <input type="radio" id="q10" name="qualidade-piso" value="10">
+                        <label for="q10">10 (Excelente)</label>
+                    </div>
+                </div>
+            </div>
+
+            <button type="button" onclick="calcularOrcamento()">Calcular Orçamento</button>
+        </form>
+
+        <div id="resultado" class="resultado" style="display: none;"></div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        function calcularOrcamento() {
+            console.clear();
+            console.log('=== TESTE COMPLETO DA APLICAÇÃO ===');
+            
+            // Obter valores do formulário
+            const metrosQuadrados = parseFloat(document.getElementById('metros-quadrados').value);
+            const maquinaIndex = document.getElementById('maquina').value;
+            const qualidadePisoSelecionada = document.querySelector('input[name="qualidade-piso"]:checked');
+            
+            // Validações
+            if (!metrosQuadrados || metrosQuadrados <= 0) {
+                alert('Por favor, insira uma metragem válida.');
+                return;
+            }
+            
+            if (!maquinaIndex) {
+                alert('Por favor, selecione uma máquina.');
+                return;
+            }
+            
+            if (!qualidadePisoSelecionada) {
+                alert('Por favor, selecione a qualidade do piso.');
+                return;
+            }
+            
+            const qualidadePiso = parseInt(qualidadePisoSelecionada.value);
+            const maquina = MAQUINAS_CONFIG[parseInt(maquinaIndex)];
+            
+            console.log('Parâmetros do teste:');
+            console.log('- Metros quadrados:', metrosQuadrados);
+            console.log('- Máquina selecionada:', maquina.nome);
+            console.log('- Qualidade do piso:', qualidadePiso);
+            
+            // Calcular multiplicador (copiado exatamente da aplicação principal)
+            let multiplicadorDesgaste;
+            if (qualidadePiso >= 1 && qualidadePiso <= 5) {
+                multiplicadorDesgaste = 3; // Triplo para qualidade ruim (1-5)
+            } else if (qualidadePiso >= 6 && qualidadePiso <= 8) {
+                multiplicadorDesgaste = 2; // Dobro para qualidade média (6-8)
+            } else if (qualidadePiso >= 9 && qualidadePiso <= 10) {
+                multiplicadorDesgaste = 1; // Normal para qualidade boa (9-10)
+            }
+            
+            console.log('- Multiplicador calculado:', multiplicadorDesgaste);
+            
+            // Usar a calculadora da aplicação principal
+            const calculadora = new CalculadoraInsumos();
+            const insumos = calculadora.calcularInsumos(maquina, metrosQuadrados, multiplicadorDesgaste);
+            
+            // Mostrar resultado
+            mostrarResultado(insumos, metrosQuadrados, maquina, qualidadePiso, multiplicadorDesgaste);
+        }
+        
+        function mostrarResultado(insumos, metrosQuadrados, maquina, qualidadePiso, multiplicadorDesgaste) {
+            const resultadoDiv = document.getElementById('resultado');
+            
+            let html = `
+                <h2>Resultado do Cálculo</h2>
+                <p><strong>Metros Quadrados:</strong> ${metrosQuadrados}m²</p>
+                <p><strong>Máquina:</strong> ${maquina.nome}</p>
+                <p><strong>Qualidade do Piso:</strong> ${qualidadePiso}</p>
+                <p><strong>Multiplicador de Desgaste:</strong> ${multiplicadorDesgaste}x</p>
+                
+                <h3>Insumos Calculados:</h3>
+                <table class="tabela-insumos">
+                    <thead>
+                        <tr>
+                            <th>SKU</th>
+                            <th>Descrição</th>
+                            <th>Quantidade</th>
+                            <th>Valor Unit.</th>
+                            <th>Valor Total</th>
+                            <th>Tipo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            let valorTotal = 0;
+            
+            insumos.forEach(insumo => {
+                const valorTotalItem = insumo.quantidade * insumo.valor;
+                valorTotal += valorTotalItem;
+                
+                const tipo = insumo.sku.includes('INSERTO') ? 'inserto' : 'lixa';
+                const classeCSS = tipo === 'inserto' ? 'inserto' : 'lixa';
+                
+                html += `
+                    <tr class="${classeCSS}">
+                        <td>${insumo.sku}</td>
+                        <td>${insumo.descricao}</td>
+                        <td>${insumo.quantidade}</td>
+                        <td>R$ ${insumo.valor.toFixed(2)}</td>
+                        <td>R$ ${valorTotalItem.toFixed(2)}</td>
+                        <td>${tipo.toUpperCase()}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                    </tbody>
+                </table>
+                <p><strong>Valor Total dos Insumos: R$ ${valorTotal.toFixed(2)}</strong></p>
+            `;
+            
+            resultadoDiv.innerHTML = html;
+            resultadoDiv.style.display = 'block';
+            
+            // Verificar se a lógica está correta
+            verificarLogica(insumos, maquina, metrosQuadrados, multiplicadorDesgaste);
+        }
+        
+        function verificarLogica(insumos, maquina, metrosQuadrados, multiplicadorDesgaste) {
+            console.log('=== VERIFICAÇÃO DA LÓGICA ===');
+            
+            const jogosBase = Math.ceil(metrosQuadrados / maquina.baseMetragem);
+            console.log('Jogos base esperados:', jogosBase);
+            
+            const insertos = insumos.filter(item => item.sku.includes('INSERTO'));
+            const lixas = insumos.filter(item => item.sku.includes('LIXA'));
+            
+            console.log('Verificando insertos (devem ter multiplicador):');
+            let insertosCorretos = true;
+            insertos.forEach(inserto => {
+                const quantidadeEsperada = jogosBase * multiplicadorDesgaste;
+                const correto = inserto.quantidade === quantidadeEsperada;
+                if (!correto) insertosCorretos = false;
+                
+                console.log(`- ${inserto.descricao}: ${inserto.quantidade} (esperado: ${quantidadeEsperada}) ${correto ? '✓' : '✗'}`);
+            });
+            
+            console.log('Verificando lixas (NÃO devem ter multiplicador):');
+            let lixasCorretas = true;
+            lixas.forEach(lixa => {
+                const quantidadeEsperada = jogosBase;
+                const correto = lixa.quantidade === quantidadeEsperada;
+                if (!correto) lixasCorretas = false;
+                
+                console.log(`- ${lixa.descricao}: ${lixa.quantidade} (esperado: ${quantidadeEsperada}) ${correto ? '✓' : '✗'}`);
+            });
+            
+            console.log('=== RESULTADO DA VERIFICAÇÃO ===');
+            console.log('Insertos:', insertosCorretos ? 'CORRETOS ✓' : 'INCORRETOS ✗');
+            console.log('Lixas:', lixasCorretas ? 'CORRETAS ✓' : 'INCORRETAS ✗');
+            console.log('Lógica geral:', (insertosCorretos && lixasCorretas) ? 'FUNCIONANDO ✓' : 'COM PROBLEMAS ✗');
+        }
+    </script>
+</body>
+</html>

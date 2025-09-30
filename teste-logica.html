@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste da Lógica - Programa Vendas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-result {
+            background-color: #f8f9fa;
+            padding: 10px;
+            margin: 10px 0;
+            border-left: 4px solid #007bff;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Teste da Lógica - Multiplicação de Insertos</h1>
+        
+        <div class="test-section">
+            <h2>Teste 1: Qualidade Ruim (1-5) - Multiplicador 3x</h2>
+            <button onclick="testarQualidadeRuim()">Testar Qualidade 3</button>
+            <div id="resultado-ruim" class="test-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Teste 2: Qualidade Média (6-8) - Multiplicador 2x</h2>
+            <button onclick="testarQualidadeMedia()">Testar Qualidade 7</button>
+            <div id="resultado-medio" class="test-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Teste 3: Qualidade Boa (9-10) - Multiplicador 1x</h2>
+            <button onclick="testarQualidadeBoa()">Testar Qualidade 10</button>
+            <div id="resultado-bom" class="test-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Console Logs</h2>
+            <p>Abra o console do navegador (F12) para ver os logs detalhados dos cálculos.</p>
+        </div>
+    </div>
+
+    <script>
+        // Copiando apenas as partes necessárias do script principal
+        
+        // Configurações das máquinas
+        const MAQUINAS_CONFIG = [
+            {
+                nome: "KLINDEX EXPANDER 800",
+                baseMetragem: 40,
+                potencia: "7,5 HP",
+                peso: "800 kg",
+                largura: "800 mm"
+            },
+            {
+                nome: "KLINDEX EXPANDER 1000",
+                baseMetragem: 50,
+                potencia: "10 HP",
+                peso: "1000 kg",
+                largura: "1000 mm"
+            }
+        ];
+
+        // Insumos base
+        const INSUMOS_BASE = [
+            { sku: "INSERTO-METAL-30", descricao: "INSERTO METÁLICO DIAMANTADO 30/40", valor: 45.00 },
+            { sku: "INSERTO-METAL-80", descricao: "INSERTO METÁLICO DIAMANTADO 80/100", valor: 45.00 },
+            { sku: "INSERTO-METAL-120", descricao: "INSERTO METÁLICO DIAMANTADO 120/150", valor: 45.00 },
+            { sku: "LIXA-DIAM-220", descricao: "LIXA DIAMANTADA 220", valor: 35.00 },
+            { sku: "LIXA-DIAM-400", descricao: "LIXA DIAMANTADA 400", valor: 35.00 },
+            { sku: "LIXA-DIAM-800", descricao: "LIXA DIAMANTADA 800", valor: 35.00 },
+            { sku: "LIXA-DIAM-1500", descricao: "LIXA DIAMANTADA 1500", valor: 35.00 },
+            { sku: "LIXA-DIAM-3000", descricao: "LIXA DIAMANTADA 3000", valor: 35.00 },
+            { sku: "LIXA-DIAM-BUFF", descricao: "LIXA DIAMANTADA BUFF", valor: 35.00 }
+        ];
+
+        // Classe calculadora simplificada
+        class CalculadoraInsumos {
+            calcularInsumos(configMaquina, metrosQuadrados, multiplicadorDesgaste = 1) {
+                const resultados = [];
+
+                // Calcula quantos jogos de peças são necessários (base)
+                const jogosBase = Math.ceil(metrosQuadrados / configMaquina.baseMetragem);
+
+                // DEBUG: Log dos cálculos
+                console.log('=== DEBUG CALCULAR INSUMOS ===');
+                console.log('Máquina:', configMaquina.nome);
+                console.log('Metros quadrados:', metrosQuadrados);
+                console.log('Base metragem da máquina:', configMaquina.baseMetragem);
+                console.log('Jogos base calculados:', jogosBase);
+                console.log('Multiplicador de desgaste:', multiplicadorDesgaste);
+
+                // Adiciona insertes metálicos (3 tipos por jogo) - COM multiplicador baseado na qualidade
+                const insertesMetalicos = INSUMOS_BASE.slice(0, 3); // Primeiros 3 são os insertes
+                insertesMetalicos.forEach(inserto => {
+                    const quantidadeInserto = jogosBase * multiplicadorDesgaste;
+                    console.log(`Inserto ${inserto.descricao}: ${jogosBase} x ${multiplicadorDesgaste} = ${quantidadeInserto}`);
+                    resultados.push({
+                        sku: inserto.sku,
+                        descricao: inserto.descricao,
+                        quantidade: quantidadeInserto, // Multiplicador aplicado APENAS aos insertos
+                        valor: inserto.valor
+                    });
+                });
+
+                // Adiciona lixas diamantadas (6 tipos por jogo) - SEM multiplicador
+                const lixasDiamantadas = INSUMOS_BASE.slice(3); // Restantes são as lixas
+                lixasDiamantadas.forEach(lixa => {
+                    console.log(`Lixa ${lixa.descricao}: ${jogosBase} (sem multiplicador)`);
+                    resultados.push({
+                        sku: lixa.sku,
+                        descricao: lixa.descricao,
+                        quantidade: jogosBase, // Quantidade normal, sem multiplicador
+                        valor: lixa.valor
+                    });
+                });
+
+                console.log('==============================');
+
+                return resultados;
+            }
+        }
+
+        function testarQualidadeRuim() {
+            console.clear();
+            console.log('=== TESTE QUALIDADE RUIM ===');
+            
+            const calculadora = new CalculadoraInsumos();
+            const maquina = MAQUINAS_CONFIG[0]; // Primeira máquina
+            const metrosQuadrados = 100;
+            const qualidadePiso = 3;
+            
+            // Simular o cálculo do multiplicador
+            let multiplicadorDesgaste = 3; // Para qualidade 1-5
+            
+            console.log('Parâmetros do teste:');
+            console.log('- Máquina:', maquina.nome);
+            console.log('- Metros quadrados:', metrosQuadrados);
+            console.log('- Qualidade do piso:', qualidadePiso);
+            console.log('- Multiplicador esperado:', multiplicadorDesgaste);
+            
+            const resultado = calculadora.calcularInsumos(maquina, metrosQuadrados, multiplicadorDesgaste);
+            
+            // Verificar se os insertos têm o multiplicador correto
+            const insertos = resultado.filter(item => item.sku.includes('INSERTO'));
+            const jogosBase = Math.ceil(metrosQuadrados / maquina.baseMetragem);
+            
+            let html = `<strong>Resultado do Teste:</strong><br>`;
+            html += `Jogos base: ${jogosBase}<br>`;
+            html += `Multiplicador: ${multiplicadorDesgaste}<br><br>`;
+            
+            let todosCorretos = true;
+            insertos.forEach(inserto => {
+                const quantidadeEsperada = jogosBase * multiplicadorDesgaste;
+                const correto = inserto.quantidade === quantidadeEsperada;
+                if (!correto) todosCorretos = false;
+                
+                html += `${inserto.descricao}: ${inserto.quantidade} (esperado: ${quantidadeEsperada}) `;
+                html += correto ? '<span class="success">✓</span>' : '<span class="error">✗</span>';
+                html += '<br>';
+            });
+            
+            html += `<br><strong>Status:</strong> `;
+            html += todosCorretos ? '<span class="success">PASSOU</span>' : '<span class="error">FALHOU</span>';
+            
+            document.getElementById('resultado-ruim').innerHTML = html;
+        }
+
+        function testarQualidadeMedia() {
+            console.clear();
+            console.log('=== TESTE QUALIDADE MÉDIA ===');
+            
+            const calculadora = new CalculadoraInsumos();
+            const maquina = MAQUINAS_CONFIG[0];
+            const metrosQuadrados = 100;
+            const qualidadePiso = 7;
+            
+            let multiplicadorDesgaste = 2; // Para qualidade 6-8
+            
+            console.log('Parâmetros do teste:');
+            console.log('- Máquina:', maquina.nome);
+            console.log('- Metros quadrados:', metrosQuadrados);
+            console.log('- Qualidade do piso:', qualidadePiso);
+            console.log('- Multiplicador esperado:', multiplicadorDesgaste);
+            
+            const resultado = calculadora.calcularInsumos(maquina, metrosQuadrados, multiplicadorDesgaste);
+            
+            const insertos = resultado.filter(item => item.sku.includes('INSERTO'));
+            const jogosBase = Math.ceil(metrosQuadrados / maquina.baseMetragem);
+            
+            let html = `<strong>Resultado do Teste:</strong><br>`;
+            html += `Jogos base: ${jogosBase}<br>`;
+            html += `Multiplicador: ${multiplicadorDesgaste}<br><br>`;
+            
+            let todosCorretos = true;
+            insertos.forEach(inserto => {
+                const quantidadeEsperada = jogosBase * multiplicadorDesgaste;
+                const correto = inserto.quantidade === quantidadeEsperada;
+                if (!correto) todosCorretos = false;
+                
+                html += `${inserto.descricao}: ${inserto.quantidade} (esperado: ${quantidadeEsperada}) `;
+                html += correto ? '<span class="success">✓</span>' : '<span class="error">✗</span>';
+                html += '<br>';
+            });
+            
+            html += `<br><strong>Status:</strong> `;
+            html += todosCorretos ? '<span class="success">PASSOU</span>' : '<span class="error">FALHOU</span>';
+            
+            document.getElementById('resultado-medio').innerHTML = html;
+        }
+
+        function testarQualidadeBoa() {
+            console.clear();
+            console.log('=== TESTE QUALIDADE BOA ===');
+            
+            const calculadora = new CalculadoraInsumos();
+            const maquina = MAQUINAS_CONFIG[0];
+            const metrosQuadrados = 100;
+            const qualidadePiso = 10;
+            
+            let multiplicadorDesgaste = 1; // Para qualidade 9-10
+            
+            console.log('Parâmetros do teste:');
+            console.log('- Máquina:', maquina.nome);
+            console.log('- Metros quadrados:', metrosQuadrados);
+            console.log('- Qualidade do piso:', qualidadePiso);
+            console.log('- Multiplicador esperado:', multiplicadorDesgaste);
+            
+            const resultado = calculadora.calcularInsumos(maquina, metrosQuadrados, multiplicadorDesgaste);
+            
+            const insertos = resultado.filter(item => item.sku.includes('INSERTO'));
+            const jogosBase = Math.ceil(metrosQuadrados / maquina.baseMetragem);
+            
+            let html = `<strong>Resultado do Teste:</strong><br>`;
+            html += `Jogos base: ${jogosBase}<br>`;
+            html += `Multiplicador: ${multiplicadorDesgaste}<br><br>`;
+            
+            let todosCorretos = true;
+            insertos.forEach(inserto => {
+                const quantidadeEsperada = jogosBase * multiplicadorDesgaste;
+                const correto = inserto.quantidade === quantidadeEsperada;
+                if (!correto) todosCorretos = false;
+                
+                html += `${inserto.descricao}: ${inserto.quantidade} (esperado: ${quantidadeEsperada}) `;
+                html += correto ? '<span class="success">✓</span>' : '<span class="error">✗</span>';
+                html += '<br>';
+            });
+            
+            html += `<br><strong>Status:</strong> `;
+            html += todosCorretos ? '<span class="success">PASSOU</span>' : '<span class="error">FALHOU</span>';
+            
+            document.getElementById('resultado-bom').innerHTML = html;
+        }
+    </script>
+</body>
+</html>

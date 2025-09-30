@@ -54,7 +54,6 @@ class OrcamentoApp {
      */
     cacheElements() {
         this.elements.cliente = document.getElementById('cliente');
-        this.elements.vendedor = document.getElementById('vendedor');
         this.elements.data = document.getElementById('data');
         this.elements.tabelaItens = document.getElementById('tabela-itens');
         this.elements.corpoTabela = document.querySelector('#tabela-itens tbody');
@@ -80,7 +79,6 @@ class OrcamentoApp {
 
         // Event listeners para salvar automaticamente quando dados do cliente mudarem
         this.elements.cliente.addEventListener('input', this.debounce(this.salvarEstado.bind(this), 500));
-        this.elements.vendedor.addEventListener('input', this.debounce(this.salvarEstado.bind(this), 500));
         this.elements.data.addEventListener('change', this.salvarEstado.bind(this));
     }
 
@@ -200,10 +198,6 @@ class OrcamentoApp {
                     this.elements.cliente.value = dados.cliente;
                 }
                 
-                if (dados.vendedor) {
-                    this.elements.vendedor.value = dados.vendedor;
-                }
-                
                 if (dados.data) {
                     this.elements.data.value = dados.data;
                 }
@@ -245,22 +239,16 @@ class OrcamentoApp {
                 return;
             }
 
-            if (!this.elements.vendedor.value.trim()) {
-                this.mostrarFeedbackErro('Por favor, preencha o nome do vendedor');
-                this.elements.vendedor.focus();
-                return;
-            }
-
             if (this.state.itens.length === 0) {
                 this.mostrarFeedbackErro('Adicione pelo menos um item ao orçamento');
                 return;
             }
 
-            // Dados para o PDF
+            // Dados para o PDF - estrutura correta para a função gerarPDF
             const dadosPDF = {
-                cliente: this.elements.cliente.value.trim(),
-                vendedor: this.elements.vendedor.value.trim(),
+                nomeCliente: this.elements.cliente.value.trim(),
                 data: this.elements.data.value,
+                medidaBase: parseFloat(this.elements.metrosQuadrados.value) || 0,
                 itens: this.state.itens,
                 total: this.state.total
             };
@@ -496,7 +484,6 @@ class OrcamentoApp {
         try {
             const estado = {
                 cliente: this.elements.cliente.value,
-                vendedor: this.elements.vendedor.value,
                 data: this.elements.data.value,
                 itens: this.state.itens,
                 timestamp: new Date().toISOString()
@@ -525,7 +512,6 @@ class OrcamentoApp {
     obterEstado() {
         return {
             cliente: this.elements.cliente.value,
-            vendedor: this.elements.vendedor.value,
             data: this.elements.data.value,
             itens: [...this.state.itens], // Cópia dos itens
             total: this.state.total
@@ -547,7 +533,6 @@ class OrcamentoApp {
 
         // Limpa os campos do formulário
         this.elements.cliente.value = '';
-        this.elements.vendedor.value = '';
         this.setDefaultDate(); // Redefine para a data atual
 
         // Limpa campos da calculadora

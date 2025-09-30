@@ -88,7 +88,6 @@ class OrcamentoApp {
      */
     cacheElements() {
         this.elements.cliente = document.getElementById('cliente');
-        this.elements.vendedor = document.getElementById('vendedor');
         this.elements.data = document.getElementById('data');
         this.elements.tabelaItens = document.getElementById('tabela-itens');
         this.elements.corpoTabela = document.querySelector('#tabela-itens tbody');
@@ -114,7 +113,6 @@ class OrcamentoApp {
 
         // Event listeners para salvar automaticamente quando dados do cliente mudarem
         this.elements.cliente.addEventListener('input', this.debounce(this.salvarEstado.bind(this), 500));
-        this.elements.vendedor.addEventListener('input', this.debounce(this.salvarEstado.bind(this), 500));
         this.elements.data.addEventListener('change', this.salvarEstado.bind(this));
     }
 
@@ -132,8 +130,13 @@ class OrcamentoApp {
     carregarMaquinas() {
         const selector = this.elements.maquinaSelector;
         
+        if (!selector) {
+            console.error('Elemento maquina-selector não encontrado!');
+            return;
+        }
+        
         // Limpa opções existentes
-        selector.innerHTML = '<option value="">Selecione uma máquina</option>';
+        selector.innerHTML = '<option value="">-- Selecione uma máquina --</option>';
         
         // Adiciona cada máquina como opção
         MAQUINAS_CONFIG.forEach(maquina => {
@@ -142,6 +145,8 @@ class OrcamentoApp {
             option.textContent = `${maquina.nome} (${maquina.pecasPorJogo} peças/jogo)`;
             selector.appendChild(option);
         });
+        
+        console.log('Máquinas carregadas:', MAQUINAS_CONFIG.length);
     }
 
     /**
@@ -251,9 +256,7 @@ class OrcamentoApp {
                 this.elements.cliente.value = dados.cliente;
             }
 
-            if (this.elements.vendedor && dados.vendedor) {
-                this.elements.vendedor.value = dados.vendedor;
-            }
+
 
             if (this.elements.data && dados.data) {
                 this.elements.data.value = dados.data;
@@ -303,15 +306,9 @@ class OrcamentoApp {
 
             // Validação dos campos obrigatórios
             const campoCliente = this.elements.cliente;
-            const campoVendedor = this.elements.vendedor;
             
             if (!campoCliente.value.trim()) {
                 this.mostrarErroNoCampo(campoCliente, 'Nome do cliente é obrigatório.');
-                return;
-            }
-            
-            if (!campoVendedor.value.trim()) {
-                this.mostrarErroNoCampo(campoVendedor, 'Nome do vendedor é obrigatório.');
                 return;
             }
 
@@ -360,6 +357,28 @@ class OrcamentoApp {
             const maquinaSelecionada = this.elements.maquinaSelector.value;
             const valorMetragem = this.elements.metrosQuadrados.value;
 
+            // Lê o valor da qualidade do piso selecionada
+            const qualidadePisoSelecionada = document.querySelector('input[name="qualidade-piso"]:checked');
+            if (!qualidadePisoSelecionada) {
+                this.mostrarFeedbackErro('Por favor, selecione a qualidade do piso.');
+                this.removerLoadingBotao(botao);
+                return;
+            }
+
+            const qualidadePiso = parseInt(qualidadePisoSelecionada.value);
+
+            // Define o multiplicador de desgaste baseado na qualidade do piso
+            let multiplicadorDesgaste;
+            if (qualidadePiso >= 1 && qualidadePiso <= 5) {
+                multiplicadorDesgaste = 3; // Triplo para qualidade ruim (1-5)
+            } else if (qualidadePiso >= 6 && qualidadePiso <= 8) {
+                multiplicadorDesgaste = 2; // Dobro para qualidade média (6-8)
+            } else if (qualidadePiso >= 9 && qualidadePiso <= 10) {
+                multiplicadorDesgaste = 1; // Normal para qualidade boa (9-10)
+            }
+
+
+
             // Validação da máquina
             if (!maquinaSelecionada) {
                 this.mostrarFeedbackErro('Por favor, selecione uma máquina.');
@@ -389,8 +408,8 @@ class OrcamentoApp {
             // Simula um pequeno delay para mostrar o loading (opcional)
             setTimeout(() => {
                 try {
-                    // Calcula quantidades baseadas na máquina e metragem
-                    const resultados = this.calcularInsumos(configMaquina, metrosQuadrados);
+                    // Calcula quantidades baseadas na máquina, metragem e multiplicador de desgaste
+                    const resultados = this.calcularInsumos(configMaquina, metrosQuadrados, multiplicadorDesgaste);
                     
                     // Limpa itens existentes
                     this.state.itens = [];
@@ -404,7 +423,7 @@ class OrcamentoApp {
                     this.atualizarInterface();
                     this.salvarEstado();
 
-                    this.mostrarFeedbackSucesso(`Orçamento calculado para ${configMaquina.nome} com ${metrosQuadrados}m²`);
+                    this.mostrarFeedbackSucesso(`Orçamento calculado para ${configMaquina.nome} com ${metrosQuadrados}m² (Qualidade do piso: ${qualidadePiso}, Multiplicador: ${multiplicadorDesgaste}x)`);
 
                 } catch (error) {
                     console.error('Erro ao calcular orçamento:', error);
@@ -423,36 +442,40 @@ class OrcamentoApp {
     }
 
     /**
-     * Calcula as quantidades de insumos necessárias baseado na máquina e metragem
+     * Calcula as quantidades de insumos necessárias baseado na máquina, metragem e qualidade do piso
      * @param {Object} configMaquina - Configuração da máquina selecionada
      * @param {number} metrosQuadrados - Metragem a ser processada
+     * @param {number} multiplicadorDesgaste - Multiplicador baseado na qualidade do piso
      * @returns {Array} Array com os insumos e quantidades calculadas
      * @throws {Error} Quando a configuração da máquina é inválida
      */
-    calcularInsumos(configMaquina, metrosQuadrados) {
+    calcularInsumos(configMaquina, metrosQuadrados, multiplicadorDesgaste = 1) {
         const resultados = [];
 
-        // Calcula quantos jogos de peças são necessários
-        const jogosNecessarios = Math.ceil(metrosQuadrados / configMaquina.baseMetragem);
+        // Calcula quantos jogos de peças são necessários (base)
+        const jogosBase = Math.ceil(metrosQuadrados / configMaquina.baseMetragem);
 
-        // Adiciona insertes metálicos (3 tipos por jogo)
+
+
+        // Adiciona insertes metálicos (3 tipos por jogo) - COM multiplicador baseado na qualidade
         const insertesMetalicos = INSUMOS_BASE.slice(0, 3); // Primeiros 3 são os insertes
         insertesMetalicos.forEach(inserto => {
+            const quantidadeInserto = jogosBase * multiplicadorDesgaste;
             resultados.push({
                 sku: inserto.sku,
                 descricao: inserto.descricao,
-                quantidade: jogosNecessarios,
+                quantidade: quantidadeInserto, // Multiplicador aplicado APENAS aos insertos
                 valor: inserto.valor
             });
         });
 
-        // Adiciona lixas diamantadas (6 tipos por jogo)
+        // Adiciona lixas diamantadas (6 tipos por jogo) - SEM multiplicador
         const lixasDiamantadas = INSUMOS_BASE.slice(3); // Restantes são as lixas
         lixasDiamantadas.forEach(lixa => {
             resultados.push({
                 sku: lixa.sku,
                 descricao: lixa.descricao,
-                quantidade: jogosNecessarios,
+                quantidade: jogosBase, // Quantidade normal, sem multiplicador
                 valor: lixa.valor
             });
         });
@@ -531,7 +554,6 @@ class OrcamentoApp {
         this.state.itens.forEach(item => {
             const row = tbody.insertRow();
             row.innerHTML = `
-                <td>${item.sku}</td>
                 <td>${item.descricao}</td>
                 <td>${item.quantidade}</td>
                 <td>R$ ${item.valor.toFixed(2)}</td>
@@ -568,11 +590,6 @@ class OrcamentoApp {
      */
     criarLinhaTabela(item) {
         const tr = document.createElement('tr');
-
-        // Célula SKU
-        const tdSku = document.createElement('td');
-        tdSku.textContent = item.sku;
-        tr.appendChild(tdSku);
 
         // Célula Descrição
         const tdDescricao = document.createElement('td');
@@ -624,7 +641,6 @@ class OrcamentoApp {
                 itens: this.state.itens,
                 total: this.state.total,
                 cliente: this.elements.cliente.value,
-                vendedor: this.elements.vendedor.value,
                 data: this.elements.data.value,
                 timestamp: new Date().toISOString()
             };
@@ -775,7 +791,7 @@ class OrcamentoApp {
         doc.setFont(undefined, 'normal');
         doc.setTextColor(0, 0, 0);
 
-        // Primeira linha: Cliente e Data
+        // Informações: Cliente e Data
         doc.setFont(undefined, 'bold');
         doc.text('Cliente:', margin, yPosition);
         doc.setFont(undefined, 'normal');
@@ -785,13 +801,6 @@ class OrcamentoApp {
         doc.text('Data:', pageWidth - 60, yPosition);
         doc.setFont(undefined, 'normal');
         doc.text(this.elements.data.value, pageWidth - 35, yPosition);
-        yPosition += 12;
-
-        // Segunda linha: Vendedor
-        doc.setFont(undefined, 'bold');
-        doc.text('Vendedor:', margin, yPosition);
-        doc.setFont(undefined, 'normal');
-        doc.text(this.elements.vendedor.value, margin + 25, yPosition);
         yPosition += 20;
 
         return yPosition;
@@ -1012,5 +1021,9 @@ class OrcamentoApp {
 
 // Inicialização da aplicação quando o DOM estiver carregado
 document.addEventListener('DOMContentLoaded', () => {
-    window.orcamentoApp = new OrcamentoApp();
+    // Só inicializa a aplicação se os elementos principais existirem
+    const formulario = document.getElementById('formulario-orcamento');
+    if (formulario) {
+        window.orcamentoApp = new OrcamentoApp();
+    }
 });
