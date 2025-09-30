@@ -3,8 +3,7 @@
  */
 class PDFGenerator {
     constructor() {
-        this.templateBase64 = null;
-        this.loadTemplate();
+        // Construtor simplificado - template será carregado quando necessário
     }
 
     /**
