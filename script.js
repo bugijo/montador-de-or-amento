@@ -6,8 +6,6 @@
  * @version 2.0.0
  */
 
-
-
 // Configuração específica de cada máquina para a calculadora multi-máquinas
 const MAQUINAS_CONFIG = [
     { id: "fp3", nome: "FP3", pecasPorJogo: 3, baseMetragem: 500 },
@@ -38,23 +36,26 @@ const ENDURECEDOR_CONFIG = {
 };
 
 /**
- * Módulo principal da aplicação de orçamentos
- * Encapsula todo o estado e funcionalidades da aplicação
+ * Classe principal da aplicação de orçamentos
+ * Encapsula todo o estado e funcionalidades da aplicação com contexto this correto
  */
-const OrcamentoApp = (() => {
-    'use strict';
+class OrcamentoApp {
+    constructor() {
+        // Estado privado da aplicação
+        this.state = {
+            itens: [],
+            total: 0
+        };
 
-    // Estado privado da aplicação
-    let state = {
-        itens: [],
-        total: 0
-    };
+        // Cache de elementos DOM
+        this.elements = {};
 
-    // Cache de elementos DOM
-    const elements = {};
+        // Constante para a chave do Local Storage
+        this.STORAGE_KEY = 'orcamento_atual';
 
-    // Constante para a chave do Local Storage
-    const STORAGE_KEY = 'orcamento_atual';
+        // Inicializa a aplicação
+        this.init();
+    }
 
     /**
      * Função debounce para otimizar chamadas frequentes
@@ -62,9 +63,9 @@ const OrcamentoApp = (() => {
      * @param {number} delay - Delay em milissegundos
      * @returns {Function} Função com debounce aplicado
      */
-    function debounce(func, delay) {
+    debounce(func, delay) {
         let timeoutId;
-        return function (...args) {
+        return (...args) => {
             clearTimeout(timeoutId);
             timeoutId = setTimeout(() => func.apply(this, args), delay);
         };
@@ -74,110 +75,160 @@ const OrcamentoApp = (() => {
      * Inicializa a aplicação
      * Configura event listeners e elementos DOM
      */
-    function init() {
-        cacheElements();
-        bindEvents();
-        setDefaultDate();
-        carregarMaquinas(); // Carrega as opções de máquinas no seletor
-        carregarEstado(); // Carrega dados salvos do Local Storage
-        // console.log('Aplicação de Orçamento inicializada com sucesso');
+    init() {
+        this.cacheElements();
+        this.bindEvents();
+        this.setDefaultDate();
+        this.carregarMaquinas(); // Carrega as opções de máquinas no seletor
+        this.carregarEstado(); // Carrega dados salvos do Local Storage
     }
 
     /**
      * Armazena referências dos elementos DOM em cache para melhor performance
      */
-    function cacheElements() {
-        elements.cliente = document.getElementById('cliente');
-        elements.vendedor = document.getElementById('vendedor');
-        elements.data = document.getElementById('data');
-        elements.tabelaItens = document.getElementById('tabela-itens');
-        elements.corpoTabela = document.querySelector('#tabela-itens tbody');
-        elements.totalOrcamento = document.getElementById('total-orcamento');
-        elements.btnGerarPDF = document.getElementById('btn-gerar-pdf');
-        elements.btnLimpar = document.getElementById('btn-limpar');
+    cacheElements() {
+        this.elements.cliente = document.getElementById('cliente');
+        this.elements.vendedor = document.getElementById('vendedor');
+        this.elements.data = document.getElementById('data');
+        this.elements.tabelaItens = document.getElementById('tabela-itens');
+        this.elements.corpoTabela = document.querySelector('#tabela-itens tbody');
+        this.elements.totalOrcamento = document.getElementById('total-orcamento');
+        this.elements.btnGerarPDF = document.getElementById('btn-gerar-pdf');
+        this.elements.btnLimpar = document.getElementById('btn-limpar');
         
         // Elementos da calculadora multi-máquinas
-        elements.maquinaSelector = document.getElementById('maquina-selector');
-        elements.metrosQuadrados = document.getElementById('metros-quadrados');
-        elements.btnCalcularInsumos = document.getElementById('btn-calcular-insumos');
+        this.elements.maquinaSelector = document.getElementById('maquina-selector');
+        this.elements.metrosQuadrados = document.getElementById('metros-quadrados');
+        this.elements.btnCalcularInsumos = document.getElementById('btn-calcular-insumos');
     }
 
     /**
      * Configura todos os event listeners da aplicação
+     * SOLUÇÃO DEFINITIVA: Usa .bind(this) para garantir contexto correto
      */
-    function bindEvents() {
-        // Event listeners para botões principais
-        elements.btnGerarPDF.addEventListener('click', handleGerarPDF);
-        elements.btnLimpar.addEventListener('click', limparTudo);
+    bindEvents() {
+        // Event listeners para botões principais com contexto this amarrado
+        this.elements.btnCalcularInsumos.addEventListener('click', this.calcularEPreencherOrcamento.bind(this));
+        this.elements.btnGerarPDF.addEventListener('click', this.handleGerarPDF.bind(this));
+        this.elements.btnLimpar.addEventListener('click', this.limparTudo.bind(this));
 
         // Event listeners para salvar automaticamente quando dados do cliente mudarem
-        elements.cliente.addEventListener('input', debounce(salvarEstado, 500));
-        elements.vendedor.addEventListener('input', debounce(salvarEstado, 500));
-        elements.data.addEventListener('change', salvarEstado);
-
-        // Event listener para calculadora multi-máquinas
-        elements.btnCalcularInsumos.addEventListener('click', calcularEPreencherOrcamento);
+        this.elements.cliente.addEventListener('input', this.debounce(this.salvarEstado.bind(this), 500));
+        this.elements.vendedor.addEventListener('input', this.debounce(this.salvarEstado.bind(this), 500));
+        this.elements.data.addEventListener('change', this.salvarEstado.bind(this));
     }
 
     /**
      * Define a data atual como padrão no campo de data
      */
-    function setDefaultDate() {
+    setDefaultDate() {
         const hoje = new Date().toISOString().split('T')[0];
-        elements.data.value = hoje;
+        this.elements.data.value = hoje;
     }
 
     /**
      * Carrega as opções de máquinas no seletor
      */
-    function carregarMaquinas() {
-        const selector = elements.maquinaSelector;
+    carregarMaquinas() {
+        const selector = this.elements.maquinaSelector;
         
-        // Limpa opções existentes (exceto a primeira)
-        selector.innerHTML = '<option value="">-- Selecione uma máquina --</option>';
+        // Limpa opções existentes
+        selector.innerHTML = '<option value="">Selecione uma máquina</option>';
         
         // Adiciona cada máquina como opção
         MAQUINAS_CONFIG.forEach(maquina => {
             const option = document.createElement('option');
             option.value = maquina.id;
-            option.textContent = maquina.nome;
+            option.textContent = `${maquina.nome} (${maquina.pecasPorJogo} peças/jogo)`;
             selector.appendChild(option);
         });
     }
 
     /**
-     * Salva o estado atual da aplicação no Local Storage
-     * Inclui itens do orçamento, dados do cliente e total
+     * Mostra feedback visual de sucesso para o usuário
+     * @param {string} mensagem - Mensagem a ser exibida
      */
-    function salvarEstado() {
-        try {
-            const estadoParaSalvar = {
-                itens: state.itens,
-                total: state.total,
-                cliente: elements.cliente ? elements.cliente.value.trim() : '',
-                vendedor: elements.vendedor ? elements.vendedor.value.trim() : '',
-                data: elements.data ? elements.data.value : '',
-                timestamp: new Date().toISOString()
-            };
-
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(estadoParaSalvar));
-            // console.log('Estado salvo no Local Storage:', estadoParaSalvar);
-        } catch (error) {
-            console.error('Erro ao salvar estado no Local Storage:', error);
-            mostrarFeedbackErro('Erro ao salvar dados. Verifique se o navegador suporta Local Storage.');
+    mostrarFeedbackSucesso(mensagem) {
+        // Remove feedback anterior se existir
+        const feedbackAnterior = document.querySelector('.feedback-sucesso');
+        if (feedbackAnterior) {
+            feedbackAnterior.remove();
         }
+
+        // Cria novo elemento de feedback
+        const feedback = document.createElement('div');
+        feedback.className = 'feedback-sucesso';
+        feedback.textContent = mensagem;
+        feedback.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #4CAF50;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 1000;
+            font-weight: 500;
+        `;
+
+        document.body.appendChild(feedback);
+
+        // Remove automaticamente após 3 segundos
+        setTimeout(() => {
+            if (feedback.parentNode) {
+                feedback.remove();
+            }
+        }, 3000);
+    }
+
+    /**
+     * Mostra feedback visual de erro para o usuário
+     * @param {string} mensagem - Mensagem de erro a ser exibida
+     */
+    mostrarFeedbackErro(mensagem) {
+        // Remove feedback anterior se existir
+        const feedbackAnterior = document.querySelector('.feedback-erro');
+        if (feedbackAnterior) {
+            feedbackAnterior.remove();
+        }
+
+        // Cria novo elemento de feedback
+        const feedback = document.createElement('div');
+        feedback.className = 'feedback-erro';
+        feedback.textContent = mensagem;
+        feedback.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #f44336;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 1000;
+            font-weight: 500;
+        `;
+
+        document.body.appendChild(feedback);
+
+        // Remove automaticamente após 5 segundos
+        setTimeout(() => {
+            if (feedback.parentNode) {
+                feedback.remove();
+            }
+        }, 5000);
     }
 
     /**
      * Carrega o estado salvo do Local Storage
      * Restaura itens, dados do cliente e atualiza a interface
      */
-    function carregarEstado() {
+    carregarEstado() {
         try {
-            const estadoSalvo = localStorage.getItem(STORAGE_KEY);
+            const estadoSalvo = localStorage.getItem(this.STORAGE_KEY);
             
             if (!estadoSalvo) {
-                // console.log('Nenhum estado salvo encontrado no Local Storage');
                 return;
             }
 
@@ -191,483 +242,573 @@ const OrcamentoApp = (() => {
 
             // Restaura os itens do orçamento
             if (Array.isArray(dados.itens)) {
-                state.itens = dados.itens;
-                state.total = dados.total || 0;
+                this.state.itens = dados.itens;
+                this.state.total = dados.total || 0;
             }
 
             // Restaura dados do cliente (se os elementos já estiverem disponíveis)
-            if (elements.cliente && dados.cliente) {
-                elements.cliente.value = dados.cliente;
+            if (this.elements.cliente && dados.cliente) {
+                this.elements.cliente.value = dados.cliente;
             }
 
-            if (elements.vendedor && dados.vendedor) {
-                elements.vendedor.value = dados.vendedor;
+            if (this.elements.vendedor && dados.vendedor) {
+                this.elements.vendedor.value = dados.vendedor;
             }
 
-            if (elements.data && dados.data) {
-                elements.data.value = dados.data;
+            if (this.elements.data && dados.data) {
+                this.elements.data.value = dados.data;
             }
 
             // Recalcula o total para garantir consistência
-            calcularTotal();
+            this.calcularTotal();
             
             // Atualiza a interface
-            atualizarInterface();
-
-            // console.log('Estado carregado do Local Storage:', dados);
+            this.atualizarInterface();
             
-            if (state.itens.length > 0) {
-                mostrarFeedbackSucesso(`Orçamento restaurado com ${state.itens.length} item(ns)`);
+            if (this.state.itens.length > 0) {
+                this.mostrarFeedbackSucesso(`Orçamento restaurado com ${this.state.itens.length} item(ns)`);
             }
 
         } catch (error) {
             console.error('Erro ao carregar estado do Local Storage:', error);
             // Remove dados corrompidos
-            localStorage.removeItem(STORAGE_KEY);
-            mostrarFeedbackErro('Erro ao carregar dados salvos. Dados corrompidos foram removidos.');
+            localStorage.removeItem(this.STORAGE_KEY);
+            this.mostrarFeedbackErro('Erro ao carregar dados salvos. Dados corrompidos foram removidos.');
         }
     }
 
     /**
      * Remove todos os dados salvos do Local Storage
      */
-    function limparLocalStorage() {
+    limparLocalStorage() {
         try {
-            localStorage.removeItem(STORAGE_KEY);
-            // console.log('Dados removidos do Local Storage');
+            localStorage.removeItem(this.STORAGE_KEY);
         } catch (error) {
             console.error('Erro ao limpar Local Storage:', error);
         }
     }
 
-
-
-    // Funções de adição manual removidas - aplicação focada apenas na calculadora
-
     /**
      * Manipulador do evento de gerar PDF
      * @param {Event} event - Evento de click
      */
-    function handleGerarPDF(event) {
+    handleGerarPDF(event) {
         event.preventDefault();
         
-        if (!validarDadosOrcamento()) {
-            return;
-        }
-        
         try {
-            gerarPDF();
-            mostrarFeedbackSucesso('PDF gerado com sucesso!');
+            // Valida se há itens no orçamento
+            if (!this.state.itens || this.state.itens.length === 0) {
+                this.mostrarFeedbackErro('Adicione pelo menos um item ao orçamento antes de gerar o PDF.');
+                return;
+            }
+
+            // Valida dados do cliente
+            const cliente = this.elements.cliente.value.trim();
+            const vendedor = this.elements.vendedor.value.trim();
+            
+            if (!cliente) {
+                this.mostrarFeedbackErro('Por favor, preencha o nome do cliente.');
+                this.elements.cliente.focus();
+                return;
+            }
+
+            if (!vendedor) {
+                this.mostrarFeedbackErro('Por favor, preencha o nome do vendedor.');
+                this.elements.vendedor.focus();
+                return;
+            }
+
+            // Chama a função de geração de PDF
+            this.gerarPDF();
+            
         } catch (error) {
             console.error('Erro ao gerar PDF:', error);
-            mostrarFeedbackErro('Erro ao gerar PDF. Tente novamente.');
+            this.mostrarFeedbackErro('Erro ao gerar PDF. Tente novamente.');
         }
     }
 
-
-
     /**
-     * Valida os dados necessários para gerar o orçamento
-     * @returns {boolean} True se válido, false caso contrário
+     * Calcula insumos baseado na máquina e metragem selecionadas
+     * e preenche automaticamente o orçamento
      */
-    function validarDadosOrcamento() {
-        const erros = [];
-
-        if (!elements.cliente.value.trim()) {
-            erros.push('Nome do cliente é obrigatório');
-        }
-
-        if (!elements.data.value) {
-            erros.push('Data é obrigatória');
-        }
-
-        if (state.itens.length === 0) {
-            erros.push('Adicione pelo menos um item ao orçamento');
-        }
-
-        if (erros.length > 0) {
-            mostrarFeedbackErro(erros.join('\n'));
-            return false;
-        }
-
-        return true;
-    }
-
-
-
-    /**
-     * Calcula e preenche o orçamento baseado na máquina selecionada e metragem
-     * Implementa a lógica da calculadora multi-máquinas
-     */
-    function calcularEPreencherOrcamento() {
+    calcularEPreencherOrcamento() {
         try {
-            // a. Ler a máquina selecionada e os metros quadrados
-            const maquinaSelecionadaId = elements.maquinaSelector.value;
-            const metrosInseridos = parseFloat(elements.metrosQuadrados.value.replace(',', '.'));
+            const maquinaSelecionada = this.elements.maquinaSelector.value;
+            const metrosQuadrados = parseFloat(this.elements.metrosQuadrados.value);
 
             // Validações
-            if (!maquinaSelecionadaId) {
-                mostrarFeedbackErro('Selecione uma máquina');
-                return;
-            }
-
-            if (isNaN(metrosInseridos) || metrosInseridos <= 0) {
-                mostrarFeedbackErro('Informe uma metragem válida maior que zero');
-                return;
-            }
-
-            // b. Encontrar o objeto de configuração da máquina selecionada
-            const maquinaSelecionada = MAQUINAS_CONFIG.find(maq => maq.id === maquinaSelecionadaId);
-            
             if (!maquinaSelecionada) {
-                mostrarFeedbackErro('Configuração da máquina não encontrada');
+                this.mostrarFeedbackErro('Por favor, selecione uma máquina.');
                 return;
             }
 
-            // c. Calcular o número de "jogos" necessários
-            const jogos = Math.ceil(metrosInseridos / maquinaSelecionada.baseMetragem);
+            if (!metrosQuadrados || metrosQuadrados <= 0) {
+                this.mostrarFeedbackErro('Por favor, insira uma metragem válida maior que zero.');
+                return;
+            }
 
-            // d. Limpar a lista de itens atual
-            state.itens = [];
+            // Busca configuração da máquina
+            const configMaquina = MAQUINAS_CONFIG.find(m => m.id === maquinaSelecionada);
+            if (!configMaquina) {
+                this.mostrarFeedbackErro('Configuração da máquina não encontrada.');
+                return;
+            }
 
-            // e. Iterar sobre a lista INSUMOS_BASE
-            INSUMOS_BASE.forEach(insumo => {
-                const quantidadeFinal = maquinaSelecionada.pecasPorJogo * jogos;
-                
-                const item = {
-                    id: Date.now() + Math.random(), // ID único
-                    descricao: insumo.descricao,
-                    quantidade: quantidadeFinal,
-                    valor: insumo.valor,
-                    total: quantidadeFinal * insumo.valor
-                };
-                
-                state.itens.push(item);
+            // Calcula quantidades baseadas na máquina e metragem
+            const resultados = this.calcularInsumos(configMaquina, metrosQuadrados);
+            
+            // Limpa itens existentes
+            this.state.itens = [];
+
+            // Adiciona cada insumo calculado ao orçamento
+            resultados.forEach(item => {
+                this.adicionarItem(item.sku, item.descricao, item.quantidade, item.valor);
             });
 
-            // f. Cálculo Especial para Endurecedor
-            const qtdEndurecedor = Math.ceil(metrosInseridos / ENDURECEDOR_CONFIG.metrosPorLitro);
-            
-            const itemEndurecedor = {
-                id: Date.now() + Math.random() + 1000, // ID único diferente
-                descricao: ENDURECEDOR_CONFIG.descricao,
-                quantidade: qtdEndurecedor,
-                valor: ENDURECEDOR_CONFIG.valor,
-                total: qtdEndurecedor * ENDURECEDOR_CONFIG.valor
-            };
-            
-            state.itens.push(itemEndurecedor);
+            // Atualiza interface e salva estado
+            this.atualizarInterface();
+            this.salvarEstado();
 
-            // g. Chamar os métodos de renderização e salvamento
-            calcularTotal();
-            atualizarInterface();
-            salvarEstado();
-
-            // Feedback de sucesso
-            mostrarFeedbackSucesso(`Insumos calculados para ${maquinaSelecionada.nome} - ${metrosInseridos}m² (${jogos} jogo(s))`);
+            this.mostrarFeedbackSucesso(`Orçamento calculado para ${configMaquina.nome} com ${metrosQuadrados}m²`);
 
         } catch (error) {
-            console.error('Erro ao calcular insumos:', error);
-            mostrarFeedbackErro('Erro ao calcular insumos. Tente novamente.');
+            console.error('Erro ao calcular orçamento:', error);
+            this.mostrarFeedbackErro('Erro ao calcular orçamento. Verifique os dados e tente novamente.');
         }
     }
 
     /**
-     * Remove um item do estado da aplicação
-     * @param {number} itemId - ID do item a ser removido
+     * Calcula as quantidades de insumos necessárias
+     * @param {Object} configMaquina - Configuração da máquina selecionada
+     * @param {number} metrosQuadrados - Metragem a ser processada
+     * @returns {Array} Array com os insumos e quantidades calculadas
      */
-    function removerItemDoEstado(itemId) {
-        state.itens = state.itens.filter(item => item.id !== itemId);
-        calcularTotal();
-        atualizarInterface();
-        salvarEstado(); // Salva automaticamente após remover item
-    }
+    calcularInsumos(configMaquina, metrosQuadrados) {
+        const resultados = [];
 
-    /**
-     * Calcula o total do orçamento
-     */
-    function calcularTotal() {
-        state.total = state.itens.reduce((acc, item) => acc + item.total, 0);
-    }
+        // Calcula quantos jogos de peças são necessários
+        const jogosNecessarios = Math.ceil(metrosQuadrados / configMaquina.baseMetragem);
 
-    /**
-     * Atualiza toda a interface da aplicação
-     */
-    function atualizarInterface() {
-        atualizarTabela();
-        atualizarTotalDisplay();
-    }
-
-    /**
-     * Atualiza a tabela de itens no DOM
-     */
-    function atualizarTabela() {
-        elements.corpoTabela.innerHTML = '';
-
-        state.itens.forEach(item => {
-            const linha = criarLinhaTabela(item);
-            elements.corpoTabela.appendChild(linha);
+        // Adiciona insertes metálicos (3 tipos por jogo)
+        const insertesMetalicos = INSUMOS_BASE.slice(0, 3); // Primeiros 3 são os insertes
+        insertesMetalicos.forEach(inserto => {
+            resultados.push({
+                sku: inserto.sku,
+                descricao: inserto.descricao,
+                quantidade: jogosNecessarios,
+                valor: inserto.valor
+            });
         });
+
+        // Adiciona lixas diamantadas (6 tipos por jogo)
+        const lixasDiamantadas = INSUMOS_BASE.slice(3); // Restantes são as lixas
+        lixasDiamantadas.forEach(lixa => {
+            resultados.push({
+                sku: lixa.sku,
+                descricao: lixa.descricao,
+                quantidade: jogosNecessarios,
+                valor: lixa.valor
+            });
+        });
+
+        // Calcula endurecedor (1L a cada 40m²)
+        const litrosEndurecedor = Math.ceil(metrosQuadrados / ENDURECEDOR_CONFIG.metrosPorLitro);
+        resultados.push({
+            sku: ENDURECEDOR_CONFIG.sku,
+            descricao: ENDURECEDOR_CONFIG.descricao,
+            quantidade: litrosEndurecedor,
+            valor: ENDURECEDOR_CONFIG.valor
+        });
+
+        return resultados;
     }
 
     /**
-     * Cria uma linha da tabela para um item
-     * @param {Object} item - Item para criar a linha
-     * @returns {HTMLTableRowElement} Linha da tabela criada
+     * Adiciona um novo item ao orçamento
+     * @param {string} sku - Código do produto
+     * @param {string} descricao - Descrição do produto
+     * @param {number} quantidade - Quantidade do item
+     * @param {number} valor - Valor unitário do item
      */
-    function criarLinhaTabela(item) {
-        const linha = document.createElement('tr');
-        
-        // Criar células da tabela
-        const cellDescricao = document.createElement('td');
-        cellDescricao.textContent = item.descricao;
-        
-        const cellQuantidade = document.createElement('td');
-        cellQuantidade.textContent = item.quantidade;
-        
-        const cellValor = document.createElement('td');
-        cellValor.textContent = formatarMoeda(item.valor);
-        
-        const cellTotal = document.createElement('td');
-        cellTotal.textContent = formatarMoeda(item.total);
-        
-        const cellAcoes = document.createElement('td');
-        
-        // Criar botão de remover com event listener
+    adicionarItem(sku, descricao, quantidade, valor) {
+        const novoItem = {
+            id: Date.now() + Math.random(), // ID único
+            sku: sku || '',
+            descricao: descricao || '',
+            quantidade: parseFloat(quantidade) || 0,
+            valor: parseFloat(valor) || 0,
+            total: (parseFloat(quantidade) || 0) * (parseFloat(valor) || 0)
+        };
+
+        this.state.itens.push(novoItem);
+        this.calcularTotal();
+    }
+
+    /**
+     * Remove um item específico do orçamento
+     * @param {number|string} itemId - ID do item a ser removido
+     */
+    removerItemDoEstado(itemId) {
+        const index = this.state.itens.findIndex(item => item.id == itemId);
+        if (index !== -1) {
+            this.state.itens.splice(index, 1);
+            this.calcularTotal();
+            this.atualizarInterface();
+            this.salvarEstado();
+            this.mostrarFeedbackSucesso('Item removido com sucesso!');
+        }
+    }
+
+    /**
+     * Calcula o total geral do orçamento
+     */
+    calcularTotal() {
+        this.state.total = this.state.itens.reduce((acc, item) => acc + item.total, 0);
+    }
+
+    /**
+     * Atualiza a interface com os dados atuais
+     */
+    atualizarInterface() {
+        this.atualizarTabela();
+        this.atualizarTotal();
+    }
+
+    /**
+     * Atualiza a tabela de itens na interface
+     */
+    atualizarTabela() {
+        const tbody = this.elements.corpoTabela;
+        tbody.innerHTML = '';
+
+        this.state.itens.forEach(item => {
+            const linha = this.criarLinhaTabela(item);
+            tbody.appendChild(linha);
+        });
+
+        // Mostra/esconde a tabela baseado na existência de itens
+        this.elements.tabelaItens.style.display = this.state.itens.length > 0 ? 'table' : 'none';
+    }
+
+    /**
+     * Cria uma linha da tabela para um item específico
+     * @param {Object} item - Item do orçamento
+     * @returns {HTMLTableRowElement} Elemento tr da tabela
+     */
+    criarLinhaTabela(item) {
+        const tr = document.createElement('tr');
+
+        // Célula SKU
+        const tdSku = document.createElement('td');
+        tdSku.textContent = item.sku;
+        tr.appendChild(tdSku);
+
+        // Célula Descrição
+        const tdDescricao = document.createElement('td');
+        tdDescricao.textContent = item.descricao;
+        tr.appendChild(tdDescricao);
+
+        // Célula Quantidade
+        const tdQuantidade = document.createElement('td');
+        tdQuantidade.textContent = item.quantidade;
+        tr.appendChild(tdQuantidade);
+
+        // Célula Valor Unitário
+        const tdValor = document.createElement('td');
+        tdValor.textContent = `R$ ${item.valor.toFixed(2)}`;
+        tr.appendChild(tdValor);
+
+        // Célula Total
+        const tdTotal = document.createElement('td');
+        tdTotal.textContent = `R$ ${item.total.toFixed(2)}`;
+        tr.appendChild(tdTotal);
+
+        // Célula Ações
+        const tdAcoes = document.createElement('td');
         const btnRemover = document.createElement('button');
-        btnRemover.type = 'button';
-        btnRemover.className = 'btn btn-danger btn-sm';
         btnRemover.textContent = 'Remover';
-        
-        // Adicionar event listener que chama a função dentro do escopo correto
-        btnRemover.addEventListener('click', () => {
-            removerItemDoEstado(item.id);
-        });
-        
-        cellAcoes.appendChild(btnRemover);
-        
-        // Adicionar todas as células à linha
-        linha.appendChild(cellDescricao);
-        linha.appendChild(cellQuantidade);
-        linha.appendChild(cellValor);
-        linha.appendChild(cellTotal);
-        linha.appendChild(cellAcoes);
-        
-        return linha;
+        btnRemover.className = 'btn-remover';
+        btnRemover.addEventListener('click', () => this.removerItemDoEstado(item.id));
+        tdAcoes.appendChild(btnRemover);
+        tr.appendChild(tdAcoes);
+
+        return tr;
     }
 
     /**
-     * Atualiza o display do total do orçamento
+     * Atualiza o valor total exibido na interface
      */
-    function atualizarTotalDisplay() {
-        elements.totalOrcamento.textContent = formatarMoeda(state.total);
+    atualizarTotal() {
+        this.elements.totalOrcamento.textContent = `R$ ${this.state.total.toFixed(2)}`;
     }
 
     /**
-     * Formata um valor como moeda brasileira
-     * @param {number} valor - Valor a ser formatado
-     * @returns {string} Valor formatado como moeda
+     * Salva o estado atual no Local Storage
      */
-    function formatarMoeda(valor) {
-        return new Intl.NumberFormat('pt-BR', {
-            style: 'currency',
-            currency: 'BRL'
-        }).format(valor);
-    }
-
-
-
-    /**
-     * Gera o PDF do orçamento
-     */
-    function gerarPDF() {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-
-        // Dados do cabeçalho
-        const cliente = elements.cliente.value.trim();
-        const vendedor = elements.vendedor.value.trim();
-        const dataFormatada = formatarData(elements.data.value);
-
-        // Configuração do documento
-        configurarCabecalhoPDF(doc, cliente, vendedor, dataFormatada);
-        
-        // Tabela de itens
-        const dadosTabela = prepararDadosTabela();
-        adicionarTabelaPDF(doc, dadosTabela);
-
-        // Total
-        const finalY = doc.autoTable.previous.finalY || 60;
-        adicionarTotalPDF(doc, finalY);
-
-        // Salvar arquivo
-        const nomeArquivo = `orcamento-${cliente.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.pdf`;
-        doc.save(nomeArquivo);
-    }
-
-    /**
-     * Configura o cabeçalho do PDF
-     * @param {jsPDF} doc - Instância do jsPDF
-     * @param {string} cliente - Nome do cliente
-     * @param {string} vendedor - Nome do vendedor
-     * @param {string} data - Data formatada
-     */
-    function configurarCabecalhoPDF(doc, cliente, vendedor, data) {
-        // Logo da empresa (Base64)
-        const logoBase64 = 'data:image/png;base64,ZGF0YTppbWFnZS9wbmc7YmFzZTY0LGlWQk9SdzBLR2dvQUFBQU5TVWhFVWdBQUJMQUFBQUdRQ0FZQUFBQ2FKZEdnQUFBQUNYQklXWE1BQUFzVEFBQUxFd0VBbXB3WUFBQUtUMmxEUTFCUWFHOTBiM05vYjNBZ1NVTkRJSEJ5YjJacGJHVUFBSGphblZOblZGUHBGajMzM3ZSQ1M0aUFsRXR2VWhVSUlGSkNpNEFVa1NZcUlRa1FTb2dob2RrVlVjRVJSVVVFRzhpZ2lBT09qb0NNRlZFc0RJb0syQWZrSWFLT2c2T0lpc3I3NFh1amE5YTg5K2JOL3JYWFB1ZXM4NTJ6endmQUNBeVdTRE5STllBTXFVSWVFZUNEeDhURzRlUXVRSUVLSkhBQUVBaXpaQ0Z6L1NNQkFQaCtQRHdySXNBSHZnQUJlTk1MQ0FEQVRadkFNQnlIL3cvcVFwbGNBWUNFQWNCMGtUaExDSUFVQUVCNmprS21BRUJHQVlDZG1DWlRBS0FFQUdETFkyTGpBRkF0QUdBbmYrYlRBSUNkK0psN0FRQmJsQ0VWQWFDUkFDQVRaWWhFQUdnN0FLelBWb3BGQUZnd0FCUm1TOFE1QU5ndEFEQkpWMlpJQUxDM0FNRE9FQXV5QUFnTUFEQlJpSVVwQUFSN0FHRElJeU40QUlTWkFCUkc4bGM4OFN1dUVPY3FBQUI0bWJJOHVTUTVSWUZiQ0MxeEIxZFhMaDRvemtrWEt4UTJZUUpobWtBdXdubVpHVEtCTkEvZzg4d0FBS0NSRlJIZ2cvUDllTTRPcnM3T05vNjJEbDh0NnI4Ry95SmlZdVArNWMrcmNFQUFBT0YwZnRIK0xDK3pHb0E3Qm9CdC9xSWw3Z1JvWGd1Z2RmZUxacklQUUxVQW9PbmFWL053K0g0OFBFV2hrTG5aMmVYazVOaEt4RUpiWWNwWGZmNW53bC9BVi8xcytYNDgvUGYxNEw3aUpJRXlYWUZIQlBqZ3dzejBUS1VjejVJSmhHTGM1bzlIL0xjTC8vd2QweUxFU1dLNVdDb1U0MUVTY1k1RW1venpNcVVpaVVLU0tjVWwwdjlrNHQ4cyt3TSszelVBc0dvK0FYdVJMYWhkWXdQMlN5Y1FXSFRBNHZjQUFQSzdiOEhVS0FnRGdHaUQ0YzkzLys4Ly9VZWdKUUNBWmttU2NRQUFYa1FrTGxUS3N6L0hDQUFBUktDQktyQkJHL1RCR0N6QUJoekJCZHpCQy94Z05vUkNKTVRDUWhCQ0NtU0FISEpnS2F5Q1FpaUd6YkFkS21BdjFFQWROTUJSYUlhVGNBNHV3bFc0RGoxd0QvcGhDSjdCS0x5QkNRUkJ5QWdUWVNIYWlBRmlpbGdqamdnWG1ZWDRJY0ZJQkJLTEpDREppQlJSSWt1Uk5VZ3hVb3BVSUZWSUhmSTljZ0k1aDF4R3VwRTd5QUF5Z3Z5R3ZFY3hsSUd5VVQzVURMVkR1YWczR29SR29ndlFaSFF4bW84V29KdlFjclFhUFl3Mm9lZlFxMmdQMm84K1E4Y3d3T2dZQnpQRWJEQXV4c05Dc1Rnc0NaTmp5N0VpckF5cnhocXdWcXdEdTRuMVk4K3hkd1FTZ1VYQUNUWUVkMElnWVI1QlNGaE1XRTdZU0tnZ0hDUTBFZG9KTndrRGhGSENKeUtUcUV1MEpyb1IrY1FZWWpJeGgxaElMQ1BXRW84VEx4QjdpRVBFTnlRU2lVTXlKN21RQWtteHBGVFNFdEpHMG01U0kra3NxWnMwU0Jvams4bmFaR3V5QnptVUxDQXJ5SVhrbmVURDVEUGtHK1FoOGxzS25XSkFjYVQ0VStJb1VzcHFTaG5sRU9VMDVRWmxtREpCVmFPYVV0Mm9vVlFSTlk5YVFxMmh0bEt2VVllb0V6UjFtam5OZ3haSlM2V3RvcFhUR21nWGFQZHByK2gwdWhIZGxSNU9sOUJYMHN2cFIraVg2QVAwZHd3TmhoV0R4NGhuS0JtYkdBY1laeGwzR0srWVRLWVowNHNaeDFRd056SHJtT2VaRDVsdlZWZ3F0aXA4RlpIS0NwVktsU2FWR3lvdlZLbXFwcXJlcWd0VjgxWExWSStwWGxOOXJrWlZNMVBqcVFuVWxxdFZxcDFRNjFNYlUyZXBPNmlIcW1lb2IxUS9wSDVaL1lrR1djTk13MDlEcEZHZ3NWL2p2TVlnQzJNWnMzZ3NJV3NOcTRaMWdUWEVKckhOMlh4MktydVkvUjI3aXoycXFhRTVRek5LTTFlelV2T1VaajhINDVoeCtKeDBUZ25uS0tlWDgzNkszaFR2S2VJcEc2WTBUTGt4WlZ4cnFwYVhsbGlyU0t0UnEwZnJ2VGF1N2FlZHByMUZ1MW43Z1E1Qngwb25YQ2RIWjQvT0JaM25VOWxUM2FjS3B4Wk5QVHIxcmk2cWE2VWJvYnRFZDc5dXArNllucjVlZ0o1TWI2ZmVlYjNuK2h4OUwvMVUvVzM2cC9WSERGZ0dzd3drQnRzTXpoZzh4VFZ4Ynp3ZEw4ZmI4VkZEWGNOQVE2VmhsV0dYNFNV';
-        
+    salvarEstado() {
         try {
-            // Adiciona o logo no canto superior esquerdo
-            if (logoBase64 && logoBase64.length > 50) {
-                doc.addImage(logoBase64, 'JPEG', 14, 10, 40, 20); // x, y, width, height
-            }
+            const estadoParaSalvar = {
+                itens: this.state.itens,
+                total: this.state.total,
+                cliente: this.elements.cliente.value,
+                vendedor: this.elements.vendedor.value,
+                data: this.elements.data.value,
+                timestamp: new Date().toISOString()
+            };
+
+            localStorage.setItem(this.STORAGE_KEY, JSON.stringify(estadoParaSalvar));
         } catch (error) {
-            console.warn('Erro ao adicionar logo ao PDF:', error);
+            console.error('Erro ao salvar estado no Local Storage:', error);
+            this.mostrarFeedbackErro('Erro ao salvar dados automaticamente.');
         }
-
-        // Título (ajustado para não sobrepor o logo)
-        doc.setFontSize(18);
-        doc.setFont(undefined, 'bold');
-        doc.text('ORÇAMENTO', 105, 20, { align: 'center' });
-
-        // Informações da empresa (lado direito, alinhado com o logo)
-        doc.setFontSize(10);
-        doc.setFont(undefined, 'normal');
-        doc.text('FINITI DIAMANTADOS', 196, 15, { align: 'right' });
-        doc.text('Soluções em Diamantados', 196, 22, { align: 'right' });
-        doc.text('contato@finiti.com.br', 196, 29, { align: 'right' });
-
-        // Informações do cliente (movidas para baixo)
-        doc.setFontSize(12);
-        doc.setFont(undefined, 'normal');
-        doc.text(`Cliente: ${cliente}`, 14, 45);
-        doc.text(`Vendedor: ${vendedor}`, 14, 52);
-        doc.text(`Data: ${data}`, 14, 59);
-        
-        // Linha separadora (ajustada)
-        doc.line(14, 65, 196, 65);
     }
 
     /**
-     * Prepara os dados da tabela para o PDF
-     * @returns {Array} Dados formatados para a tabela
+     * Gera e baixa o PDF do orçamento
      */
-    function prepararDadosTabela() {
-        return {
-            head: [['Descrição', 'Qtd', 'Valor Unit.', 'Total']],
-            body: state.itens.map(item => [
+    gerarPDF() {
+        try {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Logo da FINITI em Base64 (SVG convertido)
+            const logoBase64 = 'data:image/svg+xml;base64,' + btoa(`
+                <svg width="120" height="40" viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="120" height="40" rx="6" fill="#253A5E"/>
+                    <text x="60" y="26" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="700" text-anchor="middle" fill="white">FINITI</text>
+                    <circle cx="15" cy="20" r="3" fill="#28a745"/>
+                    <circle cx="105" cy="20" r="3" fill="#28a745"/>
+                </svg>
+            `);
+
+            // Configurações do documento
+            const pageWidth = doc.internal.pageSize.width;
+            const pageHeight = doc.internal.pageSize.height;
+            const margin = 20;
+
+            // PASSO 1: MARCA D'ÁGUA (Primeiro elemento a ser desenhado)
+            this.adicionarMarcaDagua(doc, logoBase64, pageWidth, pageHeight);
+
+            // PASSO 2: CABEÇALHO
+            let yPosition = this.adicionarCabecalho(doc, logoBase64, pageWidth, margin);
+
+            // PASSO 3: TABELA DE ITENS
+            const tableData = this.state.itens.map(item => [
+                item.sku,
                 item.descricao,
                 item.quantidade.toString(),
-                formatarMoeda(item.valor),
-                formatarMoeda(item.total)
-            ])
+                `R$ ${item.valor.toFixed(2)}`,
+                `R$ ${item.total.toFixed(2)}`
+            ]);
+
+            doc.autoTable({
+                head: [['SKU', 'Descrição', 'Qtd', 'Valor Unit.', 'Total']],
+                body: tableData,
+                startY: yPosition,
+                margin: { left: margin, right: margin },
+                styles: { 
+                    fontSize: 10,
+                    cellPadding: 5
+                },
+                headStyles: { 
+                    fillColor: [37, 58, 94], // Cor da marca FINITI (#253A5E)
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold'
+                },
+                alternateRowStyles: {
+                    fillColor: [245, 245, 245]
+                },
+                // PASSO 4: RODAPÉ (Executado em cada página)
+                didDrawPage: (data) => {
+                    this.adicionarRodape(doc, pageWidth, pageHeight, data.pageNumber, doc.getNumberOfPages());
+                }
+            });
+
+            // Total geral
+            yPosition = doc.lastAutoTable.finalY + 20;
+            doc.setFontSize(14);
+            doc.setFont(undefined, 'bold');
+            doc.setTextColor(37, 58, 94); // Cor da marca FINITI
+            doc.text(`TOTAL GERAL: R$ ${this.state.total.toFixed(2)}`, pageWidth - margin, yPosition, { align: 'right' });
+
+            // Salva o PDF
+            const nomeArquivo = `orcamento_${this.elements.cliente.value.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(nomeArquivo);
+
+            this.mostrarFeedbackSucesso('PDF gerado com sucesso!');
+
+        } catch (error) {
+            console.error('Erro ao gerar PDF:', error);
+            this.mostrarFeedbackErro('Erro ao gerar PDF. Verifique se todas as bibliotecas estão carregadas.');
+        }
+    }
+
+    /**
+     * Adiciona marca d'água transparente no centro da página
+     * @param {jsPDF} doc - Instância do jsPDF
+     * @param {string} logoBase64 - Logo em Base64
+     * @param {number} pageWidth - Largura da página
+     * @param {number} pageHeight - Altura da página
+     */
+    adicionarMarcaDagua(doc, logoBase64, pageWidth, pageHeight) {
+        // Configurar opacidade baixa para marca d'água
+        doc.setGState(new doc.GState({ opacity: 0.05 }));
+        
+        // Calcular posição central e tamanho da marca d'água
+        const logoWidth = 80;
+        const logoHeight = 26.67; // Proporção 3:1 da logo original
+        const x = (pageWidth - logoWidth) / 2;
+        const y = (pageHeight - logoHeight) / 2;
+        
+        // Adicionar logo como marca d'água
+        doc.addImage(logoBase64, 'SVG', x, y, logoWidth, logoHeight);
+        
+        // Restaurar opacidade total para o resto do conteúdo
+        doc.setGState(new doc.GState({ opacity: 1 }));
+    }
+
+    /**
+     * Adiciona cabeçalho profissional com logo e informações
+     * @param {jsPDF} doc - Instância do jsPDF
+     * @param {string} logoBase64 - Logo em Base64
+     * @param {number} pageWidth - Largura da página
+     * @param {number} margin - Margem da página
+     * @returns {number} Posição Y após o cabeçalho
+     */
+    adicionarCabecalho(doc, logoBase64, pageWidth, margin) {
+        let yPosition = margin;
+
+        // Logo no canto superior esquerdo
+        const logoWidth = 40;
+        const logoHeight = 13.33; // Proporção 3:1 da logo original
+        doc.addImage(logoBase64, 'SVG', margin, yPosition, logoWidth, logoHeight);
+
+        // Título "ORÇAMENTO" centralizado
+        doc.setFontSize(24);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(37, 58, 94); // Cor da marca FINITI
+        doc.text('ORÇAMENTO', pageWidth / 2, yPosition + 10, { align: 'center' });
+        
+        yPosition += 30;
+
+        // Linha decorativa
+        doc.setDrawColor(37, 58, 94);
+        doc.setLineWidth(0.5);
+        doc.line(margin, yPosition, pageWidth - margin, yPosition);
+        yPosition += 15;
+
+        // Informações do cliente em layout organizado
+        doc.setFontSize(11);
+        doc.setFont(undefined, 'normal');
+        doc.setTextColor(0, 0, 0);
+
+        // Primeira linha: Cliente e Data
+        doc.setFont(undefined, 'bold');
+        doc.text('Cliente:', margin, yPosition);
+        doc.setFont(undefined, 'normal');
+        doc.text(this.elements.cliente.value, margin + 20, yPosition);
+        
+        doc.setFont(undefined, 'bold');
+        doc.text('Data:', pageWidth - 60, yPosition);
+        doc.setFont(undefined, 'normal');
+        doc.text(this.elements.data.value, pageWidth - 35, yPosition);
+        yPosition += 12;
+
+        // Segunda linha: Vendedor
+        doc.setFont(undefined, 'bold');
+        doc.text('Vendedor:', margin, yPosition);
+        doc.setFont(undefined, 'normal');
+        doc.text(this.elements.vendedor.value, margin + 25, yPosition);
+        yPosition += 20;
+
+        return yPosition;
+    }
+
+    /**
+     * Adiciona rodapé com informações de contato e numeração
+     * @param {jsPDF} doc - Instância do jsPDF
+     * @param {number} pageWidth - Largura da página
+     * @param {number} pageHeight - Altura da página
+     * @param {number} pageNumber - Número da página atual
+     * @param {number} totalPages - Total de páginas
+     */
+    adicionarRodape(doc, pageWidth, pageHeight, pageNumber, totalPages) {
+        const margin = 20;
+        const rodapeY = pageHeight - 25;
+
+        // Linha horizontal no rodapé
+        doc.setDrawColor(37, 58, 94);
+        doc.setLineWidth(0.5);
+        doc.line(margin, rodapeY - 5, pageWidth - margin, rodapeY - 5);
+
+        // Configurações do texto do rodapé
+        doc.setFontSize(8);
+        doc.setFont(undefined, 'normal');
+        doc.setTextColor(100, 100, 100);
+
+        // Informações de contato da empresa
+        const enderecoTexto = 'Rua José Magro, 295 | Distrito Industrial 3 | Sertãozinho/SP CEP: 14.175-336';
+        const telefoneTexto = 'Tel: +55 (16) 3511-0900';
+        const emailTexto = 'E-mail: finiti@finiti.com.br';
+
+        // Primeira linha: Endereço (centralizado)
+        doc.text(enderecoTexto, pageWidth / 2, rodapeY + 2, { align: 'center' });
+
+        // Segunda linha: Telefone e E-mail
+        doc.text(telefoneTexto, margin, rodapeY + 10);
+        doc.text(emailTexto, pageWidth / 2, rodapeY + 10, { align: 'center' });
+
+        // Numeração da página (canto direito)
+        const paginaTexto = `Página ${pageNumber} de ${totalPages}`;
+        doc.text(paginaTexto, pageWidth - margin, rodapeY + 10, { align: 'right' });
+    }
+
+    /**
+     * Retorna o estado atual da aplicação (para debugging)
+     * @returns {Object} Estado atual
+     */
+    obterEstado() {
+        return {
+            itens: [...this.state.itens],
+            total: this.state.total
         };
     }
 
     /**
-     * Adiciona a tabela de itens ao PDF
-     * @param {jsPDF} doc - Instância do jsPDF
-     * @param {Object} dadosTabela - Dados da tabela
+     * Limpa todos os dados do orçamento
      */
-    function adicionarTabelaPDF(doc, dadosTabela) {
-        doc.autoTable({
-            startY: 65, // Ajustado para acomodar o novo layout com logo
-            head: dadosTabela.head,
-            body: dadosTabela.body,
-            theme: 'striped',
-            headStyles: {
-                fillColor: [37, 58, 94], // Cor azul escuro da marca (#253A5E)
-                textColor: 255,
-                fontStyle: 'bold'
-            },
-            styles: {
-                fontSize: 10,
-                cellPadding: 5
-            },
-            columnStyles: {
-                1: { halign: 'center' },
-                2: { halign: 'right' },
-                3: { halign: 'right' }
-            }
-        });
-    }
+    limparTudo() {
+        if (this.state.itens.length === 0) {
+            this.mostrarFeedbackErro('Não há dados para limpar.');
+            return;
+        }
 
-    /**
-     * Adiciona o total ao PDF
-     * @param {jsPDF} doc - Instância do jsPDF
-     * @param {number} finalY - Posição Y final da tabela
-     */
-    function adicionarTotalPDF(doc, finalY) {
-        doc.setFontSize(14);
-        doc.setFont(undefined, 'bold');
-        doc.text(`Total do Orçamento: ${formatarMoeda(state.total)}`, 14, finalY + 15);
-    }
-
-    /**
-     * Formata uma data para exibição
-     * @param {string} dataISO - Data no formato ISO
-     * @returns {string} Data formatada
-     */
-    function formatarData(dataISO) {
-        return new Date(dataISO + 'T00:00:00').toLocaleDateString('pt-BR');
-    }
-
-    /**
-     * Mostra feedback de sucesso para o usuário
-     * @param {string} mensagem - Mensagem de sucesso
-     */
-    function mostrarFeedbackSucesso(mensagem = 'Item adicionado com sucesso!') {
-        // Implementação simples com alert - pode ser substituída por toast/modal
-        // console.log('✅ Sucesso:', mensagem);
-    }
-
-    /**
-     * Mostra feedback de erro para o usuário
-     * @param {string} mensagem - Mensagem de erro
-     */
-    function mostrarFeedbackErro(mensagem) {
-        alert('❌ Erro: ' + mensagem);
-        console.error('Erro:', mensagem);
-    }
-
-    /**
-     * Obtém o estado atual da aplicação (para debug)
-     * @returns {Object} Estado atual
-     */
-    function obterEstado() {
-        return { ...state };
-    }
-
-    /**
-     * Limpa todos os dados da aplicação
-     */
-    function limparTudo() {
-        if (confirm('Tem certeza que deseja limpar todos os dados?')) {
-            state.itens = [];
-            state.total = 0;
-            elements.cliente.value = '';
-            elements.vendedor.value = '';
-            elements.maquinaSelector.value = '';
-            elements.metrosQuadrados.value = '';
-            setDefaultDate();
-            limparLocalStorage();
-            atualizarInterface();
-            mostrarFeedbackSucesso('Dados limpos com sucesso!');
+        if (confirm('Tem certeza que deseja limpar todos os dados? Esta ação não pode ser desfeita.')) {
+            this.state.itens = [];
+            this.state.total = 0;
+            this.elements.cliente.value = '';
+            this.elements.vendedor.value = '';
+            this.elements.maquinaSelector.value = '';
+            this.elements.metrosQuadrados.value = '';
+            this.setDefaultDate();
+            this.limparLocalStorage();
+            this.atualizarInterface();
+            this.mostrarFeedbackSucesso('Dados limpos com sucesso!');
         }
     }
 
-    // API pública do módulo
-    return {
-        init,
-        removerItem: removerItemDoEstado,
-        obterEstado,
-        limparTudo
-    };
-})();
+    /**
+     * Método público para remover item (compatibilidade)
+     * @param {number|string} itemId - ID do item a ser removido
+     */
+    removerItem(itemId) {
+        this.removerItemDoEstado(itemId);
+    }
+}
 
 // Inicialização da aplicação quando o DOM estiver carregado
 document.addEventListener('DOMContentLoaded', () => {
-    OrcamentoApp.init();
+    window.orcamentoApp = new OrcamentoApp();
 });
 
 // Aplicação focada na calculadora - funções de adição manual removidas
