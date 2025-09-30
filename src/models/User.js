@@ -135,8 +135,17 @@ module.exports = (sequelize, DataTypes) => {
 
   // Associações
   User.associate = function(models) {
-    // Aqui podem ser adicionadas associações futuras
-    // Por exemplo: User.hasMany(models.Orcamento, { foreignKey: 'user_id' });
+    // Associação com vendas
+    User.hasMany(models.Venda, {
+      foreignKey: 'vendedor_id',
+      as: 'vendas'
+    });
+
+    // Associação com orçamentos
+    User.hasMany(models.Orcamento, {
+      foreignKey: 'vendedor_id',
+      as: 'orcamentos'
+    });
   };
 
   return User;

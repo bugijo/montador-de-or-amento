@@ -7,6 +7,8 @@ const router = express.Router();
 const authRoutes = require('./auth');
 const produtoRoutes = require('./produtos');
 const formulaRoutes = require('./formulas');
+const vendaRoutes = require('./vendas');
+const orcamentoRoutes = require('./orcamentos');
 
 /**
  * Rota de health check
@@ -41,7 +43,9 @@ router.get('/info', (req, res) => {
       endpoints: {
         auth: '/api/auth',
         produtos: '/api/produtos',
-        formulas: '/api/formulas'
+        formulas: '/api/formulas',
+        vendas: '/api/vendas',
+        orcamentos: '/api/orcamentos'
       },
       documentation: '/api/docs',
       health_check: '/api/health'
@@ -53,6 +57,8 @@ router.get('/info', (req, res) => {
 router.use('/auth', authRoutes);
 router.use('/produtos', produtoRoutes);
 router.use('/formulas', formulaRoutes);
+router.use('/vendas', vendaRoutes);
+router.use('/orcamentos', orcamentoRoutes);
 
 /**
  * Middleware para rotas não encontradas

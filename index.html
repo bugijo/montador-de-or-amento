@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Orçamentos - Finiti</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header Corporativo -->
+        <div class="header">
+            <div class="header-left">
+                <img src="logo-finiti.svg" alt="Logo FINITI" class="logo">
+                <h1>Gerador de Orçamentos</h1>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <!-- Dados do Cliente -->
+            <div class="cliente-section">
+                <h2>Dados do Cliente</h2>
+                <div class="form-row">
+                    <div>
+                        <label for="cliente">Nome do Cliente</label>
+                        <input type="text" id="cliente" placeholder="Digite o nome do cliente">
+                    </div>
+                    <div>
+                        <label for="vendedor">Nome do Vendedor</label>
+                        <input type="text" id="vendedor" placeholder="Digite o nome do vendedor">
+                    </div>
+                    <div>
+                        <label for="data">Data</label>
+                        <input type="date" id="data">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calculadora Multi-Máquinas -->
+            <div class="calculadora-section">
+                <h2>Calculadora de Insumos</h2>
+                <div class="form-container">
+                    <div>
+                        <label for="maquina-selector">Selecione a Máquina</label>
+                        <select id="maquina-selector">
+                            <option value="">-- Selecione uma máquina --</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="metros-quadrados">Metros Quadrados</label>
+                        <input type="number" id="metros-quadrados" placeholder="Ex: 100" min="1" step="0.01">
+                    </div>
+                </div>
+                <div class="acoes-section">
+                    <button type="button" id="btn-calcular-insumos" class="btn btn-primary">Calcular Insumos</button>
+                </div>
+            </div>
+
+            <!-- Ações Principais -->
+            <div class="acoes-section">
+                <button type="button" class="btn btn-success" id="btn-gerar-pdf">Gerar PDF</button>
+                <button type="button" class="btn btn-danger" id="btn-limpar">Limpar Tudo</button>
+            </div>
+
+            <!-- Tabela de Resultados -->
+            <div class="tabela-section">
+                <h2>Itens do Orçamento</h2>
+                <div class="tabela-container">
+                    <table id="tabela-itens">
+                        <thead>
+                            <tr>
+                                <th>Descrição</th>
+                                <th>Quantidade</th>
+                                <th>Valor Unitário</th>
+                                <th>Total</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Itens serão adicionados dinamicamente -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="total-container">
+                    <h3 id="total-orcamento">Total: R$ 0,00</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="./jspdf.umd.min.js"></script>
+    <script src="./jspdf.plugin.autotable.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

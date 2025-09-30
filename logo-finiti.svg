@@ -1,0 +1,11 @@
+<svg width="120" height="40" viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fundo do logo -->
+  <rect width="120" height="40" rx="6" fill="#253A5E"/>
+  
+  <!-- Texto FINITI -->
+  <text x="60" y="26" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="700" text-anchor="middle" fill="white">FINITI</text>
+  
+  <!-- Elemento decorativo -->
+  <circle cx="15" cy="20" r="3" fill="#28a745"/>
+  <circle cx="105" cy="20" r="3" fill="#28a745"/>
+</svg>

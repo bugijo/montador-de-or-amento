@@ -5,20 +5,17 @@ import {
   FiMenu, 
   FiX, 
   FiHome, 
-  FiUser, 
   FiLogOut,
   FiTool,
   FiBarChart,
   FiBox,
   FiUsers,
   FiShield,
-  FiBell,
-  FiSearch
+  FiBell
 } from 'react-icons/fi';
 import styled from 'styled-components';
 
 import { useAuth } from '../../contexts/AuthContext';
-import { Button, Flex, Text, Heading } from '../../styles/GlobalStyles';
 import { theme } from '../../styles/GlobalStyles';
 
 const LayoutContainer = styled.div`
