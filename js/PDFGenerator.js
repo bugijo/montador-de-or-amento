@@ -40,58 +40,48 @@ class PDFGenerator {
             doc.setFontSize(12);
             doc.setTextColor(0, 0, 0);
             
-            // Posiciona o nome do cliente (baseado no layout do template)
-            if (dadosOrcamento.nomeCliente) {
-                doc.text(dadosOrcamento.nomeCliente, 25, 85);
-            }
+            // Dados do Cabeçalho - Posicionamento exato conforme especificação
+            const cliente = dadosOrcamento.nomeCliente || '';
+            const data = new Date().toLocaleDateString('pt-BR');
             
-            // Posiciona a data
-            const dataAtual = new Date().toLocaleDateString('pt-BR');
-            doc.text(dataAtual, 160, 85);
+            doc.text(cliente, 25, 62); // Nome do Cliente
+            doc.text(data, 175, 62);    // Data
             
-            // Prepara os dados da tabela
-            const linhas = dadosOrcamento.itens.map(item => [
-                item.quantidade.toString(),
+            // Função auxiliar para formatar moeda
+            const formatarMoeda = (valor) => `R$ ${valor.toFixed(2)}`;
+            
+            // Prepara os dados da tabela na ordem correta: Quantidade, Descrição, Valor, Total
+            const corpoTabela = dadosOrcamento.itens.map(item => [
+                item.quantidade,
                 item.descricao,
-                `R$ ${item.valor.toFixed(2)}`,
-                `R$ ${(item.quantidade * item.valor).toFixed(2)}`
+                formatarMoeda(item.valor),
+                formatarMoeda(item.quantidade * item.valor)
             ]);
             
             // Calcula o total geral
             const valorTotal = dadosOrcamento.itens.reduce((total, item) => 
                 total + (item.quantidade * item.valor), 0);
             
-            // Configura autoTable com posicionamento preciso baseado no template
+            // Configura autoTable com posicionamento e dimensões precisas
             doc.autoTable({
-                body: linhas,
-                startY: 110, // Posição Y onde a tabela deve começar
-                margin: { left: 25, right: 25 },
-                styles: {
-                    fontSize: 10,
-                    cellPadding: 2,
-                    textColor: [0, 0, 0],
-                    fillColor: false, // Sem preenchimento para manter transparência
-                    lineColor: [0, 0, 0],
-                    lineWidth: 0.1,
-                    halign: 'left'
-                },
+                startY: 83,
+                body: corpoTabela,
+                theme: 'plain',
+                drawHeader: false,
+                margin: { left: 19 },
                 columnStyles: {
-                    0: { halign: 'center', cellWidth: 25 }, // QUANTIDADE
-                    1: { halign: 'left', cellWidth: 95 },   // DESCRIÇÃO
-                    2: { halign: 'right', cellWidth: 30 },  // VALOR
-                    3: { halign: 'right', cellWidth: 30 }   // TOTAL
-                },
-                didDrawPage: function(data) {
-                    // Remove bordas da tabela para integrar melhor com o template
+                    0: { cellWidth: 25 }, // Coluna Quantidade
+                    1: { cellWidth: 85 }, // Coluna Descrição
+                    2: { cellWidth: 30 }, // Coluna Valor
+                    3: { cellWidth: 30 }  // Coluna Total
                 }
             });
             
-            // Adiciona o total geral em posição específica
+            // Posiciona o Total Geral alinhado à direita, abaixo da tabela
             const finalY = doc.lastAutoTable.finalY + 10;
             doc.setFontSize(12);
             doc.setFont(undefined, 'bold');
-            doc.text('TOTAL GERAL:', 130, finalY);
-            doc.text(`R$ ${valorTotal.toFixed(2)}`, 170, finalY);
+            doc.text(`TOTAL GERAL: ${formatarMoeda(valorTotal)}`, 140, finalY, { align: 'right' });
             
             // Salva o PDF
             const nomeArquivo = `orcamento_${dadosOrcamento.nomeCliente || 'cliente'}_${new Date().toISOString().split('T')[0]}.pdf`;
