@@ -267,6 +267,20 @@ class OrcamentoApp {
      */
     calcularEPreencherOrcamento() {
         try {
+            const qualidadeInput = document.querySelector('input[name="qualidade-piso"]:checked');
+            if (!qualidadeInput) {
+                alert('Por favor, selecione uma qualidade para o piso.');
+                return;
+            }
+            const qualidadeValor = parseInt(qualidadeInput.value, 10);
+
+            let multiplicadorDesgaste = 1;
+            if (qualidadeValor <= 5) {
+                multiplicadorDesgaste = 3;
+            } else if (qualidadeValor >= 6 && qualidadeValor <= 8) {
+                multiplicadorDesgaste = 2;
+            }
+
             const maquinaId = this.elements.maquinaSelector.value;
             const metrosQuadrados = parseFloat(this.elements.metrosQuadrados.value);
 
@@ -289,7 +303,7 @@ class OrcamentoApp {
             }
 
             // Calcula os insumos necessários
-            const insumos = this.calcularInsumos(configMaquina, metrosQuadrados);
+            const insumos = this.calcularInsumos(configMaquina, metrosQuadrados, multiplicadorDesgaste);
 
             // Adiciona cada insumo ao orçamento
             insumos.forEach(insumo => {
@@ -315,16 +329,16 @@ class OrcamentoApp {
      * @param {number} metrosQuadrados - Metragem a ser processada
      * @returns {Array} Array com os insumos calculados
      */
-    calcularInsumos(configMaquina, metrosQuadrados) {
+    calcularInsumos(configMaquina, metrosQuadrados, multiplicadorDesgaste = 1) {
         const insumos = [];
 
         // Calcula quantos jogos de insertes são necessários
         const jogosNecessarios = Math.ceil(metrosQuadrados / configMaquina.baseMetragem);
 
-        // Adiciona insertes baseado no número de peças por jogo
+        // Adiciona insertes baseado no número de peças por jogo COM multiplicador
         INSUMOS_BASE.slice(0, 3).forEach(inserto => { // Primeiros 3 são os insertes
             const quantidadePorJogo = configMaquina.pecasPorJogo;
-            const quantidadeTotal = jogosNecessarios * quantidadePorJogo;
+            const quantidadeTotal = jogosNecessarios * quantidadePorJogo * multiplicadorDesgaste;
             
             insumos.push({
                 sku: inserto.sku,
