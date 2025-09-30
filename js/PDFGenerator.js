@@ -10,156 +10,98 @@ class PDFGenerator {
     /**
      * Carrega o template Base64 do arquivo
      */
-    async loadTemplate() {
+    async carregarTemplateBase64() {
         try {
             const response = await fetch('./template_base64.txt');
-            this.templateBase64 = await response.text();
-            this.templateBase64 = this.templateBase64.trim();
+            const templateBase64 = await response.text();
+            return 'data:image/png;base64,' + templateBase64.trim();
         } catch (error) {
-            console.error('Erro ao carregar template:', error);
+            console.error('Erro ao carregar template Base64:', error);
+            throw error;
         }
     }
 
     /**
      * Gera PDF usando o template PNG como fundo
-     * @param {Object} dados - Dados do orçamento
-     * @param {Array} itens - Lista de itens do orçamento
-     * @param {number} total - Total do orçamento
+     * @param {Object} dadosOrcamento - Dados do orçamento
      */
-    async gerarPDF(dados, itens, total) {
+    async gerarPDF(dadosOrcamento) {
         try {
-            // Garante que o template foi carregado
-            if (!this.templateBase64) {
-                await this.loadTemplate();
-            }
-
+            // Carrega o template Base64
+            const templateBase64 = await this.carregarTemplateBase64();
+            
+            // Cria o documento PDF
             const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-
-            // Configurações da página
-            const pageWidth = doc.internal.pageSize.width;
-            const pageHeight = doc.internal.pageSize.height;
-
-            // PASSO 1: Adicionar template PNG como fundo
-            this.adicionarTemplateFundo(doc, pageWidth, pageHeight);
-
-            // PASSO 2: Posicionar dados do cliente e data
-            this.posicionarDadosCliente(doc, dados);
-
-            // PASSO 3: Configurar e posicionar tabela
-            this.configurarTabela(doc, itens, total);
-
-            // Salvar PDF
-            const nomeArquivo = `orcamento_${dados.cliente.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            
+            // Adiciona o template PNG como fundo
+            doc.addImage(templateBase64, 'PNG', 0, 0, 210, 297);
+            
+            // Configurações de fonte
+            doc.setFontSize(12);
+            doc.setTextColor(0, 0, 0);
+            
+            // Posiciona o nome do cliente (baseado no layout do template)
+            if (dadosOrcamento.nomeCliente) {
+                doc.text(dadosOrcamento.nomeCliente, 25, 85);
+            }
+            
+            // Posiciona a data
+            const dataAtual = new Date().toLocaleDateString('pt-BR');
+            doc.text(dataAtual, 160, 85);
+            
+            // Prepara os dados da tabela
+            const linhas = dadosOrcamento.itens.map(item => [
+                item.quantidade.toString(),
+                item.descricao,
+                `R$ ${item.valor.toFixed(2)}`,
+                `R$ ${(item.quantidade * item.valor).toFixed(2)}`
+            ]);
+            
+            // Calcula o total geral
+            const valorTotal = dadosOrcamento.itens.reduce((total, item) => 
+                total + (item.quantidade * item.valor), 0);
+            
+            // Configura autoTable com posicionamento preciso baseado no template
+            doc.autoTable({
+                body: linhas,
+                startY: 110, // Posição Y onde a tabela deve começar
+                margin: { left: 25, right: 25 },
+                styles: {
+                    fontSize: 10,
+                    cellPadding: 2,
+                    textColor: [0, 0, 0],
+                    fillColor: false, // Sem preenchimento para manter transparência
+                    lineColor: [0, 0, 0],
+                    lineWidth: 0.1,
+                    halign: 'left'
+                },
+                columnStyles: {
+                    0: { halign: 'center', cellWidth: 25 }, // QUANTIDADE
+                    1: { halign: 'left', cellWidth: 95 },   // DESCRIÇÃO
+                    2: { halign: 'right', cellWidth: 30 },  // VALOR
+                    3: { halign: 'right', cellWidth: 30 }   // TOTAL
+                },
+                didDrawPage: function(data) {
+                    // Remove bordas da tabela para integrar melhor com o template
+                }
+            });
+            
+            // Adiciona o total geral em posição específica
+            const finalY = doc.lastAutoTable.finalY + 10;
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.text('TOTAL GERAL:', 130, finalY);
+            doc.text(`R$ ${valorTotal.toFixed(2)}`, 170, finalY);
+            
+            // Salva o PDF
+            const nomeArquivo = `orcamento_${dadosOrcamento.nomeCliente || 'cliente'}_${new Date().toISOString().split('T')[0]}.pdf`;
             doc.save(nomeArquivo);
-
-            return { success: true, message: 'PDF gerado com sucesso!' };
-
+            
         } catch (error) {
             console.error('Erro ao gerar PDF:', error);
-            return { success: false, message: 'Erro ao gerar PDF. Verifique se todas as bibliotecas estão carregadas.' };
+            alert('Erro ao gerar PDF. Verifique o console para mais detalhes.');
         }
     }
 
-    /**
-     * Adiciona o template PNG como fundo da página
-     * @param {jsPDF} doc - Instância do jsPDF
-     * @param {number} pageWidth - Largura da página
-     * @param {number} pageHeight - Altura da página
-     */
-    adicionarTemplateFundo(doc, pageWidth, pageHeight) {
-        if (this.templateBase64) {
-            // Adiciona a imagem do template como fundo
-            // A imagem será redimensionada para cobrir toda a página
-            doc.addImage(
-                `data:image/png;base64,${this.templateBase64}`,
-                'PNG',
-                0, // x
-                0, // y
-                pageWidth, // largura
-                pageHeight // altura
-            );
-        }
-    }
-
-    /**
-     * Posiciona os dados do cliente e data nas coordenadas exatas do template
-     * @param {jsPDF} doc - Instância do jsPDF
-     * @param {Object} dados - Dados do cliente
-     */
-    posicionarDadosCliente(doc, dados) {
-        // Configurações de fonte para os dados
-        doc.setFontSize(12);
-        doc.setFont(undefined, 'normal');
-        doc.setTextColor(0, 0, 0);
-
-        // Posicionamento baseado no template (coordenadas aproximadas)
-        // Nome do cliente - posição no campo "NOME DO CLIENTE"
-        doc.text(dados.cliente, 85, 95); // Ajustar coordenadas conforme necessário
-
-        // Data - posição no campo "DATA"
-        doc.text(dados.data, 160, 95); // Ajustar coordenadas conforme necessário
-    }
-
-    /**
-     * Configura e posiciona a tabela de itens
-     * @param {jsPDF} doc - Instância do jsPDF
-     * @param {Array} itens - Lista de itens
-     * @param {number} total - Total do orçamento
-     */
-    configurarTabela(doc, itens, total) {
-        // Preparar dados da tabela conforme o template
-        const tableData = itens.map(item => [
-            item.quantidade.toString(), // QUANTIDADE
-            item.descricao,             // DESCRIÇÃO
-            `R$ ${item.valor.toFixed(2)}`, // VALOR
-            `R$ ${item.total.toFixed(2)}`  // TOTAL
-        ]);
-
-        // Configurar autoTable com posicionamento preciso
-        doc.autoTable({
-            head: [['QUANTIDADE', 'DESCRIÇÃO', 'VALOR', 'TOTAL']],
-            body: tableData,
-            startY: 120, // Posição Y onde a tabela começa (ajustar conforme template)
-            margin: { 
-                left: 25,   // Margem esquerda
-                right: 25   // Margem direita
-            },
-            tableWidth: 'auto',
-            columnStyles: {
-                0: { cellWidth: 25 },  // QUANTIDADE - largura fixa
-                1: { cellWidth: 85 },  // DESCRIÇÃO - largura maior
-                2: { cellWidth: 30 },  // VALOR - largura média
-                3: { cellWidth: 30 }   // TOTAL - largura média
-            },
-            styles: { 
-                fontSize: 10,
-                cellPadding: 3,
-                overflow: 'linebreak',
-                halign: 'left'
-            },
-            headStyles: { 
-                fillColor: [255, 255, 255], // Fundo branco para não sobrepor o template
-                textColor: [0, 0, 0],        // Texto preto
-                fontStyle: 'bold',
-                lineWidth: 0.1,
-                lineColor: [0, 0, 0]
-            },
-            bodyStyles: {
-                fillColor: [255, 255, 255], // Fundo branco para não sobrepor o template
-                textColor: [0, 0, 0],        // Texto preto
-                lineWidth: 0.1,
-                lineColor: [0, 0, 0]
-            },
-            alternateRowStyles: {
-                fillColor: [248, 248, 248]  // Cinza muito claro para linhas alternadas
-            }
-        });
-
-        // Posicionar total geral (se necessário, dependendo do template)
-        // const finalY = doc.lastAutoTable.finalY + 10;
-        // doc.setFontSize(12);
-        // doc.setFont(undefined, 'bold');
-        // doc.text(`TOTAL GERAL: R$ ${total.toFixed(2)}`, 170, finalY);
-    }
 }
