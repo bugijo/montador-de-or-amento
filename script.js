@@ -289,41 +289,60 @@ class OrcamentoApp {
     }
 
     /**
-     * Manipulador do evento de gerar PDF
-     * @param {Event} event - Evento de click
+     * Manipula a geração do PDF com feedback para o usuário
      */
-    handleGerarPDF(event) {
-        event.preventDefault();
+    handleGerarPDF() {
+        const botaoGerar = document.querySelector('button[onclick="orcamentoApp.handleGerarPDF()"]');
         
         try {
-            // Valida se há itens no orçamento
-            if (!this.state.itens || this.state.itens.length === 0) {
-                this.mostrarFeedbackErro('Adicione pelo menos um item ao orçamento antes de gerar o PDF.');
+            // Verifica se há itens na tabela
+            if (this.state.itens.length === 0) {
+                this.mostrarFeedbackErro('Adicione pelo menos um item antes de gerar o PDF.');
                 return;
             }
 
-            // Valida dados do cliente
-            const cliente = this.elements.cliente.value.trim();
-            const vendedor = this.elements.vendedor.value.trim();
+            // Validação dos campos obrigatórios
+            const campoCliente = this.elements.cliente;
+            const campoVendedor = this.elements.vendedor;
             
-            if (!cliente) {
-                this.mostrarFeedbackErro('Por favor, preencha o nome do cliente.');
-                this.elements.cliente.focus();
+            if (!campoCliente.value.trim()) {
+                this.mostrarErroNoCampo(campoCliente, 'Nome do cliente é obrigatório.');
+                return;
+            }
+            
+            if (!campoVendedor.value.trim()) {
+                this.mostrarErroNoCampo(campoVendedor, 'Nome do vendedor é obrigatório.');
                 return;
             }
 
-            if (!vendedor) {
-                this.mostrarFeedbackErro('Por favor, preencha o nome do vendedor.');
-                this.elements.vendedor.focus();
-                return;
-            }
+            // Mostra loading no botão
+            this.mostrarLoadingBotao(botaoGerar, 'Gerando PDF...');
 
-            // Chama a função de geração de PDF
-            this.gerarPDF();
+            // Carrega dados salvos do localStorage
+            this.carregarEstado();
+
+            // Simula um pequeno delay para mostrar o feedback
+            setTimeout(() => {
+                try {
+                    // Gera o PDF
+                    this.gerarPDF();
+                    
+                    // Mostra feedback de sucesso
+                    this.mostrarFeedbackSucesso('PDF gerado com sucesso!');
+                    
+                } catch (error) {
+                    console.error('Erro ao gerar PDF:', error);
+                    this.mostrarFeedbackErro('Erro ao gerar PDF. Tente novamente.');
+                } finally {
+                    // Remove loading do botão
+                    this.removerLoadingBotao(botaoGerar);
+                }
+            }, 800);
             
         } catch (error) {
             console.error('Erro ao gerar PDF:', error);
             this.mostrarFeedbackErro('Erro ao gerar PDF. Tente novamente.');
+            this.removerLoadingBotao(botaoGerar);
         }
     }
 
@@ -332,56 +351,83 @@ class OrcamentoApp {
      * e preenche automaticamente o orçamento
      */
     calcularEPreencherOrcamento() {
+        const botao = this.elements.btnCalcularInsumos;
+        
         try {
+            // Mostra loading no botão
+            this.mostrarLoadingBotao(botao, 'Calculando...');
+            
             const maquinaSelecionada = this.elements.maquinaSelector.value;
-            const metrosQuadrados = parseFloat(this.elements.metrosQuadrados.value);
+            const valorMetragem = this.elements.metrosQuadrados.value;
 
-            // Validações
+            // Validação da máquina
             if (!maquinaSelecionada) {
                 this.mostrarFeedbackErro('Por favor, selecione uma máquina.');
+                this.removerLoadingBotao(botao);
                 return;
             }
 
-            if (!metrosQuadrados || metrosQuadrados <= 0) {
-                this.mostrarFeedbackErro('Por favor, insira uma metragem válida maior que zero.');
+            // Validação aprimorada da metragem
+            const validacao = this.validarMetrosQuadrados(valorMetragem);
+            if (!validacao.valido) {
+                this.mostrarErroNoCampo(this.elements.metrosQuadrados, validacao.erro);
+                this.mostrarFeedbackErro(validacao.erro);
+                this.removerLoadingBotao(botao);
                 return;
             }
+
+            const metrosQuadrados = validacao.valor;
 
             // Busca configuração da máquina
             const configMaquina = MAQUINAS_CONFIG.find(m => m.id === maquinaSelecionada);
             if (!configMaquina) {
                 this.mostrarFeedbackErro('Configuração da máquina não encontrada.');
+                this.removerLoadingBotao(botao);
                 return;
             }
 
-            // Calcula quantidades baseadas na máquina e metragem
-            const resultados = this.calcularInsumos(configMaquina, metrosQuadrados);
-            
-            // Limpa itens existentes
-            this.state.itens = [];
+            // Simula um pequeno delay para mostrar o loading (opcional)
+            setTimeout(() => {
+                try {
+                    // Calcula quantidades baseadas na máquina e metragem
+                    const resultados = this.calcularInsumos(configMaquina, metrosQuadrados);
+                    
+                    // Limpa itens existentes
+                    this.state.itens = [];
 
-            // Adiciona cada insumo calculado ao orçamento
-            resultados.forEach(item => {
-                this.adicionarItem(item.sku, item.descricao, item.quantidade, item.valor);
-            });
+                    // Adiciona cada insumo calculado ao orçamento
+                    resultados.forEach(item => {
+                        this.adicionarItem(item.sku, item.descricao, item.quantidade, item.valor);
+                    });
 
-            // Atualiza interface e salva estado
-            this.atualizarInterface();
-            this.salvarEstado();
+                    // Atualiza interface e salva estado
+                    this.atualizarInterface();
+                    this.salvarEstado();
 
-            this.mostrarFeedbackSucesso(`Orçamento calculado para ${configMaquina.nome} com ${metrosQuadrados}m²`);
+                    this.mostrarFeedbackSucesso(`Orçamento calculado para ${configMaquina.nome} com ${metrosQuadrados}m²`);
+
+                } catch (error) {
+                    console.error('Erro ao calcular orçamento:', error);
+                    this.mostrarFeedbackErro('Erro ao calcular orçamento. Verifique os dados e tente novamente.');
+                } finally {
+                    // Remove loading do botão
+                    this.removerLoadingBotao(botao);
+                }
+            }, 300); // 300ms de delay para mostrar o loading
 
         } catch (error) {
             console.error('Erro ao calcular orçamento:', error);
             this.mostrarFeedbackErro('Erro ao calcular orçamento. Verifique os dados e tente novamente.');
+            this.removerLoadingBotao(botao);
         }
     }
 
     /**
-     * Calcula as quantidades de insumos necessárias
+     * Calcula as quantidades de insumos necessárias baseado na máquina e metragem
      * @param {Object} configMaquina - Configuração da máquina selecionada
      * @param {number} metrosQuadrados - Metragem a ser processada
      * @returns {Array} Array com os insumos e quantidades calculadas
+     * @throws {Error} Quando a configuração da máquina é inválida
      */
     calcularInsumos(configMaquina, metrosQuadrados) {
         const resultados = [];
@@ -425,10 +471,10 @@ class OrcamentoApp {
 
     /**
      * Adiciona um novo item ao orçamento
-     * @param {string} sku - Código do produto
+     * @param {string} sku - Código SKU do produto
      * @param {string} descricao - Descrição do produto
-     * @param {number} quantidade - Quantidade do item
-     * @param {number} valor - Valor unitário do item
+     * @param {number|string} quantidade - Quantidade do item
+     * @param {number|string} valor - Valor unitário do item
      */
     adicionarItem(sku, descricao, quantidade, valor) {
         const novoItem = {
@@ -472,6 +518,31 @@ class OrcamentoApp {
     atualizarInterface() {
         this.atualizarTabela();
         this.atualizarTotal();
+    }
+
+    /**
+     * Renderiza a tabela de itens na interface
+     * Atualiza o DOM com todos os itens do estado atual
+     */
+    renderizarTabela() {
+        const tbody = this.elements.corpoTabela;
+        tbody.innerHTML = '';
+
+        this.state.itens.forEach(item => {
+            const row = tbody.insertRow();
+            row.innerHTML = `
+                <td>${item.sku}</td>
+                <td>${item.descricao}</td>
+                <td>${item.quantidade}</td>
+                <td>R$ ${item.valor.toFixed(2)}</td>
+                <td>R$ ${item.total.toFixed(2)}</td>
+                <td>
+                    <button onclick="orcamentoApp.removerItem('${item.id}')" class="btn-remover">
+                        Remover
+                    </button>
+                </td>
+            `;
+        });
     }
 
     /**
@@ -536,9 +607,11 @@ class OrcamentoApp {
     }
 
     /**
-     * Atualiza o valor total exibido na interface
+     * Atualiza o valor total do orçamento
+     * Calcula a soma de todos os itens e atualiza a interface
      */
     atualizarTotal() {
+        this.state.total = this.state.itens.reduce((acc, item) => acc + item.total, 0);
         this.elements.totalOrcamento.textContent = `R$ ${this.state.total.toFixed(2)}`;
     }
 
@@ -804,11 +877,140 @@ class OrcamentoApp {
     removerItem(itemId) {
         this.removerItemDoEstado(itemId);
     }
+
+    /**
+     * Mostra estado de loading em um botão
+     * @param {HTMLElement} botao - Elemento do botão
+     * @param {string} textoLoading - Texto a ser exibido durante o loading
+     */
+    mostrarLoadingBotao(botao, textoLoading) {
+        if (!botao) return;
+        
+        // Salva o texto original se ainda não foi salvo
+        if (!botao.dataset.textoOriginal) {
+            botao.dataset.textoOriginal = botao.textContent;
+        }
+        
+        // Desabilita o botão e muda o texto
+        botao.disabled = true;
+        botao.textContent = textoLoading;
+        botao.style.opacity = '0.7';
+        botao.style.cursor = 'not-allowed';
+    }
+
+    /**
+     * Remove estado de loading de um botão
+     * @param {HTMLElement} botao - Elemento do botão
+     */
+    removerLoadingBotao(botao) {
+        if (!botao) return;
+        
+        // Restaura o estado original
+        botao.disabled = false;
+        botao.textContent = botao.dataset.textoOriginal || botao.textContent;
+        botao.style.opacity = '1';
+        botao.style.cursor = 'pointer';
+    }
+
+    /**
+     * Valida entrada de metros quadrados
+     * @param {string} valor - Valor a ser validado
+     * @returns {Object} Resultado da validação {valido: boolean, erro: string, valor: number}
+     */
+    validarMetrosQuadrados(valor) {
+        // Remove espaços em branco
+        valor = valor.trim();
+        
+        // Verifica se está vazio
+        if (!valor) {
+            return {
+                valido: false,
+                erro: 'Por favor, insira a metragem.',
+                valor: null
+            };
+        }
+        
+        // Converte para número
+        const numero = parseFloat(valor);
+        
+        // Verifica se é um número válido
+        if (isNaN(numero)) {
+            return {
+                valido: false,
+                erro: 'Por favor, insira apenas números.',
+                valor: null
+            };
+        }
+        
+        // Verifica se é positivo
+        if (numero <= 0) {
+            return {
+                valido: false,
+                erro: 'A metragem deve ser maior que zero.',
+                valor: null
+            };
+        }
+        
+        // Verifica se não é muito grande (limite razoável)
+        if (numero > 100000) {
+            return {
+                valido: false,
+                erro: 'Metragem muito grande. Verifique o valor inserido.',
+                valor: null
+            };
+        }
+        
+        return {
+            valido: true,
+            erro: null,
+            valor: numero
+        };
+    }
+
+    /**
+     * Mostra mensagem de erro específica para um campo
+     * @param {HTMLElement} campo - Campo que contém o erro
+     * @param {string} mensagem - Mensagem de erro
+     */
+    mostrarErroNoCampo(campo, mensagem) {
+        if (!campo) return;
+        
+        // Remove erro anterior se existir
+        const erroAnterior = campo.parentNode.querySelector('.erro-campo');
+        if (erroAnterior) {
+            erroAnterior.remove();
+        }
+        
+        // Cria elemento de erro
+        const elementoErro = document.createElement('div');
+        elementoErro.className = 'erro-campo';
+        elementoErro.textContent = mensagem;
+        elementoErro.style.cssText = `
+            color: #f44336;
+            font-size: 12px;
+            margin-top: 4px;
+            font-weight: 500;
+        `;
+        
+        // Adiciona borda vermelha ao campo
+        campo.style.borderColor = '#f44336';
+        campo.style.boxShadow = '0 0 0 2px rgba(244, 67, 54, 0.2)';
+        
+        // Insere o erro após o campo
+        campo.parentNode.insertBefore(elementoErro, campo.nextSibling);
+        
+        // Remove o erro após 5 segundos
+        setTimeout(() => {
+            if (elementoErro.parentNode) {
+                elementoErro.remove();
+                campo.style.borderColor = '';
+                campo.style.boxShadow = '';
+            }
+        }, 5000);
+    }
 }
 
 // Inicialização da aplicação quando o DOM estiver carregado
 document.addEventListener('DOMContentLoaded', () => {
     window.orcamentoApp = new OrcamentoApp();
 });
-
-// Aplicação focada na calculadora - funções de adição manual removidas
