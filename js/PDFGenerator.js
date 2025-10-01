@@ -10,8 +10,6 @@ class PDFGenerator {
         // Construtor simplificado - template será carregado quando necessário
     }
 
-
-
     /**
      * Gera PDF usando o template PNG como fundo com alinhamento de precisão
      * @param {Object} dadosOrcamento - Dados do orçamento
@@ -90,5 +88,4 @@ class PDFGenerator {
             alert('Erro ao gerar PDF. Verifique o console para mais detalhes.');
         }
     }
-
 }
