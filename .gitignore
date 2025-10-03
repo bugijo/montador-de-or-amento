@@ -49,6 +49,25 @@ jspm_packages/
 # Yarn Integrity file
 .yarn-integrity
 
+# Arquivos temporários e de distribuição
+dist-manual/
+FINITI-Instalador-*.zip
+*.exe
+*.msi
+
+# Arquivos de teste
+teste-*.html
+test-*.js
+debug-*.js
+
+# Arquivos de configuração local
+.trae/
+
+# Arquivos de imagem temporários
+orçamento.png
+modelo*.png
+modelo*.pdf
+
 # dotenv environment variables file
 .env
 

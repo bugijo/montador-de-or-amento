@@ -1,9 +1,14 @@
 'use strict';
 
+const BaseController = require('./BaseController');
 const { Produto, Formula } = require('../models');
 const { Op } = require('sequelize');
+const ResponseService = require('../services/ResponseService');
 
-class ProdutoController {
+class ProdutoController extends BaseController {
+  constructor() {
+    super(Produto, 'produto', 'produtos');
+  }
   /**
    * Lista todos os produtos com paginação e filtros
    */
@@ -52,30 +57,19 @@ class ProdutoController {
         ]
       });
 
-      const totalPages = Math.ceil(count / limit);
+      const pagination = {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(count / limit),
+        totalItems: count,
+        itemsPerPage: parseInt(limit),
+        hasNextPage: page * limit < count,
+        hasPreviousPage: page > 1
+      };
 
-      res.json({
-        success: true,
-        data: {
-          produtos: rows,
-          pagination: {
-            current_page: parseInt(page),
-            total_pages: totalPages,
-            total_items: count,
-            items_per_page: parseInt(limit),
-            has_next: page < totalPages,
-            has_prev: page > 1
-          }
-        }
-      });
+      return ResponseService.paginated(res, rows, pagination, 'Produtos encontrados com sucesso');
 
     } catch (error) {
-      console.error('Erro ao listar produtos:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Erro interno do servidor',
-        error: 'INTERNAL_SERVER_ERROR'
-      });
+      return ResponseService.handleError(res, error, 'Listar produtos');
     }
   }
 
@@ -91,205 +85,25 @@ class ProdutoController {
           {
             model: Formula,
             as: 'formulas',
-            include: [
-              {
-                model: Produto,
-                as: 'maquina',
-                attributes: ['id', 'nome', 'tipo']
-              }
-            ]
+            attributes: ['id', 'nome', 'maquina_id'],
+            required: false
           }
         ]
       });
 
       if (!produto) {
-        return res.status(404).json({
-          success: false,
-          message: 'Produto não encontrado',
-          error: 'PRODUCT_NOT_FOUND'
-        });
+        return ResponseService.notFound(res, 'Produto');
       }
 
-      res.json({
-        success: true,
-        data: {
-          produto
-        }
-      });
+      return ResponseService.item(res, produto, 'Produto encontrado com sucesso');
 
     } catch (error) {
-      console.error('Erro ao buscar produto:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Erro interno do servidor',
-        error: 'INTERNAL_SERVER_ERROR'
-      });
+      return ResponseService.handleError(res, error, 'Buscar produto');
     }
   }
 
   /**
-   * Cria um novo produto
-   */
-  async store(req, res) {
-    try {
-      const produtoData = req.body;
-
-      // Validação específica para acessórios
-      if (produtoData.tipo === 'Acessório') {
-        if (!produtoData.maquinas_compativeis || produtoData.maquinas_compativeis.length === 0) {
-          return res.status(400).json({
-            success: false,
-            message: 'Acessórios devem ter pelo menos uma máquina compatível',
-            error: 'MISSING_COMPATIBLE_MACHINES'
-          });
-        }
-
-        // Verifica se as máquinas compatíveis existem
-        const maquinasExistentes = await Produto.findAll({
-          where: {
-            id: { [Op.in]: produtoData.maquinas_compativeis },
-            tipo: 'Máquina'
-          },
-          attributes: ['id']
-        });
-
-        if (maquinasExistentes.length !== produtoData.maquinas_compativeis.length) {
-          return res.status(400).json({
-            success: false,
-            message: 'Uma ou mais máquinas compatíveis não existem',
-            error: 'INVALID_COMPATIBLE_MACHINES'
-          });
-        }
-      }
-
-      const produto = await Produto.create(produtoData);
-
-      res.status(201).json({
-        success: true,
-        message: 'Produto criado com sucesso',
-        data: {
-          produto
-        }
-      });
-
-    } catch (error) {
-      console.error('Erro ao criar produto:', error);
-
-      if (error.name === 'SequelizeValidationError') {
-        return res.status(400).json({
-          success: false,
-          message: 'Dados de entrada inválidos',
-          error: 'VALIDATION_ERROR',
-          details: error.errors.map(err => ({
-            field: err.path,
-            message: err.message
-          }))
-        });
-      }
-
-      if (error.name === 'SequelizeUniqueConstraintError') {
-        return res.status(409).json({
-          success: false,
-          message: 'Código interno já existe',
-          error: 'DUPLICATE_CODE'
-        });
-      }
-
-      res.status(500).json({
-        success: false,
-        message: 'Erro interno do servidor',
-        error: 'INTERNAL_SERVER_ERROR'
-      });
-    }
-  }
-
-  /**
-   * Atualiza um produto existente
-   */
-  async update(req, res) {
-    try {
-      const { id } = req.params;
-      const updateData = req.body;
-
-      const produto = await Produto.findByPk(id);
-
-      if (!produto) {
-        return res.status(404).json({
-          success: false,
-          message: 'Produto não encontrado',
-          error: 'PRODUCT_NOT_FOUND'
-        });
-      }
-
-      // Validação específica para mudança de tipo
-      if (updateData.tipo && updateData.tipo !== produto.tipo) {
-        if (updateData.tipo === 'Acessório' && (!updateData.maquinas_compativeis || updateData.maquinas_compativeis.length === 0)) {
-          return res.status(400).json({
-            success: false,
-            message: 'Acessórios devem ter pelo menos uma máquina compatível',
-            error: 'MISSING_COMPATIBLE_MACHINES'
-          });
-        }
-
-        if (updateData.tipo === 'Máquina') {
-          updateData.maquinas_compativeis = null;
-        }
-      }
-
-      // Verifica máquinas compatíveis se fornecidas
-      if (updateData.maquinas_compativeis && updateData.maquinas_compativeis.length > 0) {
-        const maquinasExistentes = await Produto.findAll({
-          where: {
-            id: { [Op.in]: updateData.maquinas_compativeis },
-            tipo: 'Máquina'
-          },
-          attributes: ['id']
-        });
-
-        if (maquinasExistentes.length !== updateData.maquinas_compativeis.length) {
-          return res.status(400).json({
-            success: false,
-            message: 'Uma ou mais máquinas compatíveis não existem',
-            error: 'INVALID_COMPATIBLE_MACHINES'
-          });
-        }
-      }
-
-      await produto.update(updateData);
-
-      res.json({
-        success: true,
-        message: 'Produto atualizado com sucesso',
-        data: {
-          produto
-        }
-      });
-
-    } catch (error) {
-      console.error('Erro ao atualizar produto:', error);
-
-      if (error.name === 'SequelizeValidationError') {
-        return res.status(400).json({
-          success: false,
-          message: 'Dados de entrada inválidos',
-          error: 'VALIDATION_ERROR',
-          details: error.errors.map(err => ({
-            field: err.path,
-            message: err.message
-          }))
-        });
-      }
-
-      res.status(500).json({
-        success: false,
-        message: 'Erro interno do servidor',
-        error: 'INTERNAL_SERVER_ERROR'
-      });
-    }
-  }
-
-  /**
-   * Remove um produto
+   * Sobrescreve o método destroy para verificar fórmulas associadas
    */
   async destroy(req, res) {
     try {
@@ -298,11 +112,7 @@ class ProdutoController {
       const produto = await Produto.findByPk(id);
 
       if (!produto) {
-        return res.status(404).json({
-          success: false,
-          message: 'Produto não encontrado',
-          error: 'PRODUCT_NOT_FOUND'
-        });
+        return ResponseService.notFound(res, 'Produto');
       }
 
       // Verifica se existem fórmulas associadas
@@ -316,30 +126,17 @@ class ProdutoController {
       });
 
       if (formulasAssociadas > 0) {
-        return res.status(409).json({
-          success: false,
-          message: 'Não é possível excluir produto com fórmulas associadas',
-          error: 'PRODUCT_HAS_FORMULAS',
-          details: {
-            formulas_count: formulasAssociadas
-          }
+        return ResponseService.conflict(res, 'Não é possível excluir produto com fórmulas associadas', {
+          formulas_count: formulasAssociadas
         });
       }
 
       await produto.destroy();
 
-      res.json({
-        success: true,
-        message: 'Produto removido com sucesso'
-      });
+      return ResponseService.deleted(res, 'Produto removido com sucesso');
 
     } catch (error) {
-      console.error('Erro ao remover produto:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Erro interno do servidor',
-        error: 'INTERNAL_SERVER_ERROR'
-      });
+      return ResponseService.handleError(res, error, 'Remover produto');
     }
   }
 
@@ -350,20 +147,10 @@ class ProdutoController {
     try {
       const maquinas = await Produto.findMaquinas();
 
-      res.json({
-        success: true,
-        data: {
-          maquinas
-        }
-      });
+      return ResponseService.list(res, maquinas, 'Máquinas encontradas com sucesso');
 
     } catch (error) {
-      console.error('Erro ao listar máquinas:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Erro interno do servidor',
-        error: 'INTERNAL_SERVER_ERROR'
-      });
+      return ResponseService.handleError(res, error, 'Listar máquinas');
     }
   }
 
@@ -381,20 +168,10 @@ class ProdutoController {
         acessorios = await Produto.findAcessorios();
       }
 
-      res.json({
-        success: true,
-        data: {
-          acessorios
-        }
-      });
+      return ResponseService.list(res, acessorios, 'Acessórios encontrados com sucesso');
 
     } catch (error) {
-      console.error('Erro ao listar acessórios:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Erro interno do servidor',
-        error: 'INTERNAL_SERVER_ERROR'
-      });
+      return ResponseService.handleError(res, error, 'Listar acessórios');
     }
   }
 
@@ -415,20 +192,10 @@ class ProdutoController {
 
       const categoriasLista = categorias.map(p => p.categoria).filter(Boolean);
 
-      res.json({
-        success: true,
-        data: {
-          categorias: categoriasLista
-        }
-      });
+      return ResponseService.list(res, categoriasLista, 'Categorias encontradas com sucesso');
 
     } catch (error) {
-      console.error('Erro ao listar categorias:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Erro interno do servidor',
-        error: 'INTERNAL_SERVER_ERROR'
-      });
+      return ResponseService.handleError(res, error, 'Listar categorias');
     }
   }
 }

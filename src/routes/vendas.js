@@ -44,28 +44,28 @@ router.get('/', [
   query('sort').optional().isIn(['id', 'numero_venda', 'cliente_nome', 'valor_total', 'data_venda', 'status']).withMessage('Campo de ordenação inválido'),
   query('order').optional().isIn(['ASC', 'DESC']).withMessage('Ordem deve ser ASC ou DESC'),
   validate
-], VendaController.index);
+], VendaController.index.bind(VendaController));
 
 /**
  * @route GET /api/vendas/:id
  * @desc Busca uma venda específica
  * @access Private
  */
-router.get('/:id', idValidation, VendaController.show);
+router.get('/:id', idValidation, VendaController.show.bind(VendaController));
 
 /**
  * @route POST /api/vendas
  * @desc Cria uma nova venda
  * @access Private
  */
-router.post('/', vendaValidation, VendaController.store);
+router.post('/', vendaValidation, VendaController.store.bind(VendaController));
 
 /**
  * @route PUT /api/vendas/:id
  * @desc Atualiza uma venda existente
  * @access Private
  */
-router.put('/:id', [...idValidation, ...vendaValidation], VendaController.update);
+router.put('/:id', [...idValidation, ...vendaValidation], VendaController.update.bind(VendaController));
 
 /**
  * @route PATCH /api/vendas/:id/status
@@ -93,7 +93,7 @@ router.get('/:id/pdf', idValidation, VendaController.gerarPDF);
  * @desc Remove uma venda
  * @access Private
  */
-router.delete('/:id', idValidation, VendaController.destroy);
+router.delete('/:id', idValidation, VendaController.destroy.bind(VendaController));
 
 // Rotas administrativas
 

@@ -44,28 +44,28 @@ router.get('/', [
   query('sort').optional().isIn(['id', 'numero_orcamento', 'cliente_nome', 'valor_total', 'data_orcamento', 'status']).withMessage('Campo de ordenação inválido'),
   query('order').optional().isIn(['ASC', 'DESC']).withMessage('Ordem deve ser ASC ou DESC'),
   validate
-], OrcamentoController.index);
+], OrcamentoController.index.bind(OrcamentoController));
 
 /**
  * @route GET /api/orcamentos/:id
  * @desc Busca um orçamento específico
  * @access Private
  */
-router.get('/:id', idValidation, OrcamentoController.show);
+router.get('/:id', idValidation, OrcamentoController.show.bind(OrcamentoController));
 
 /**
  * @route POST /api/orcamentos
  * @desc Cria um novo orçamento
  * @access Private
  */
-router.post('/', orcamentoValidation, OrcamentoController.store);
+router.post('/', orcamentoValidation, OrcamentoController.store.bind(OrcamentoController));
 
 /**
  * @route PUT /api/orcamentos/:id
  * @desc Atualiza um orçamento existente
  * @access Private
  */
-router.put('/:id', [...idValidation, ...orcamentoValidation], OrcamentoController.update);
+router.put('/:id', [...idValidation, ...orcamentoValidation], OrcamentoController.update.bind(OrcamentoController));
 
 /**
  * @route PATCH /api/orcamentos/:id/status
@@ -93,7 +93,7 @@ router.get('/:id/pdf', idValidation, OrcamentoController.gerarPDF);
  * @desc Remove um orçamento
  * @access Private
  */
-router.delete('/:id', idValidation, OrcamentoController.destroy);
+router.delete('/:id', idValidation, OrcamentoController.destroy.bind(OrcamentoController));
 
 // Rotas administrativas
 
